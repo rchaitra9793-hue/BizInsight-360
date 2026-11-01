@@ -12,7 +12,9 @@
   <button class="btn btn-primary w-100">Sign in</button>
 </form>
 <p class="small text-secondary mt-3 mb-0">No account? <a href="{{ url_for('auth.register') }}">Create one</a> (analyst, read-only access)</p>
+{% if demo_login %}
 <div class="small mt-3 p-2 rounded" style="background: var(--surface-2)">
-  <strong>Demo admin:</strong> {{ config.ADMIN_EMAIL }} / {{ config.ADMIN_PASSWORD if config.ADMIN_PASSWORD == 'admin123' else '••••' }}
+  <strong>Demo admin:</strong> {{ demo_login }} / admin123
 </div>
+{% endif %}
 {% endblock %}

@@ -1,4 +1,7 @@
 """BizInsight 360 - E-Commerce Sales, Profit & Inventory Analytics Platform."""
+import os
+import secrets
+
 from flask import Flask, g, render_template, session
 
 from config import Config
@@ -12,6 +15,8 @@ def create_app(overrides=None):
     app.config.from_object(Config)
     if overrides:
         app.config.update(overrides)
+    if not app.config.get("SECRET_KEY"):
+        app.config["SECRET_KEY"] = _persistent_secret(os.path.dirname(app.config["DATABASE"]))
 
     register_filters(app)
     init_csrf(app)
@@ -37,3 +42,14 @@ def create_app(overrides=None):
         return render_template("error.html", error=err), err.code
 
     return app
+
+
+def _persistent_secret(folder):
+    """A random secret key created on first run and reused afterwards (never committed)."""
+    os.makedirs(folder, exist_ok=True)
+    path = os.path.join(folder, "secret_key")
+    if not os.path.exists(path):
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(secrets.token_hex(32))
+    with open(path, encoding="utf-8") as fh:
+        return fh.read().strip()

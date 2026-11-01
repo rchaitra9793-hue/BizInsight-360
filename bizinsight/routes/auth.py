@@ -1,7 +1,7 @@
 """Login, registration, logout and password change."""
 import re
 
-from flask import Blueprint, flash, g, redirect, render_template, request, session, url_for
+from flask import Blueprint, current_app, flash, g, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from ..db import get_db, query
@@ -10,6 +10,7 @@ from ..utils import login_required, safe_next
 bp = Blueprint("auth", __name__)
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+DEMO_PASSWORD = "admin123"
 
 
 @bp.route("/login", methods=["GET", "POST"])
@@ -26,7 +27,16 @@ def login():
             flash(f"Welcome back, {user['name']}!", "success")
             return redirect(safe_next(request.args.get("next")) or url_for("dashboard.index"))
         flash("Incorrect email or password.", "danger")
-    return render_template("auth/login.html")
+    return render_template("auth/login.html", demo_login=_demo_login())
+
+
+def _demo_login():
+    """The admin email, but only while its password is still the public demo one."""
+    admin = query("SELECT email, password_hash FROM users WHERE email = ? AND role = 'admin'",
+                  (current_app.config["ADMIN_EMAIL"],), one=True)
+    if admin and check_password_hash(admin["password_hash"], DEMO_PASSWORD):
+        return admin["email"]
+    return None
 
 
 @bp.route("/register", methods=["GET", "POST"])

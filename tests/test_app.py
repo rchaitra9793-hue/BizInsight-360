@@ -212,3 +212,26 @@ def test_new_product_and_delete(app, admin):
     pid = db_value(app, "SELECT product_id FROM products WHERE name = 'Test Lamp'")
     admin.post(f"/data/products/{pid}/delete", data={"_csrf": admin.token})
     assert db_value(app, "SELECT COUNT(*) FROM products WHERE product_id = ?", (pid,)) == 0
+
+
+# ---------------- hosting safety ----------------
+
+def test_demo_login_hidden_after_password_change(tmp_path):
+    app = create_app({"DATABASE": str(tmp_path / "fresh.db"), "AUTO_LOAD_SAMPLE": False})
+    client = app.test_client()
+    assert "Demo admin" in client.get("/login").get_data(as_text=True)
+
+    _login(client)
+    token = _csrf_from_session(client)
+    client.post("/account", data={"_csrf": token, "current": "admin123", "new": "S3cure-pass!",
+                                  "confirm": "S3cure-pass!"})
+    client.get("/logout")
+    page = client.get("/login").get_data(as_text=True)
+    assert "Demo admin" not in page and "admin123" not in page
+
+
+def test_secret_key_generated_and_reused(tmp_path):
+    first = create_app({"DATABASE": str(tmp_path / "a.db"), "AUTO_LOAD_SAMPLE": False, "SECRET_KEY": None})
+    second = create_app({"DATABASE": str(tmp_path / "a.db"), "AUTO_LOAD_SAMPLE": False, "SECRET_KEY": None})
+    assert len(first.secret_key) == 64
+    assert first.secret_key == second.secret_key

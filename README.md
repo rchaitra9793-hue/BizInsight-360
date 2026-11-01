@@ -33,7 +33,7 @@ Every analytics page shares one filter bar: **date range** (with 30D / 90D / YTD
 
 | Layer | Technology |
 |---|---|
-| Backend | Python 3.10+ · Flask |
+| Backend | Python 3.11+ · Flask |
 | Database | SQLite (built into Python, no server needed) |
 | Data processing | SQL (aggregations, CTEs, CASE, views), pandas (CSV import, RFM quintiles, cohorts, Excel export), Python `statistics` |
 | Frontend | Jinja2 templates · Bootstrap 5 · Bootstrap Icons · Chart.js 4 |
@@ -72,6 +72,11 @@ python -m pytest tests            # run the test suite
 ```
 
 > The UI loads Bootstrap and Chart.js from a CDN, so the browser needs an internet connection.
+
+**Open on your phone (same Wi-Fi):** `flask --app app run --host=0.0.0.0`, then visit
+`http://<your-PC-IP>:5000` on the phone (find the IP with `ipconfig`).
+**Put it on the internet:** follow [DEPLOY.md](DEPLOY.md) (free PythonAnywhere hosting).
+**Developer mode** (auto-reload): set `FLASK_DEBUG=1` before `python app.py` - never on a shared network.
 
 ---
 
