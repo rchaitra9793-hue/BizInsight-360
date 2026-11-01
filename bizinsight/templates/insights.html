@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% from "_macros.html" import filter_bar, insight_card with context %}
+{% block title %}Insights{% endblock %}
+{% block heading %}Business insights{% endblock %}
+{% block subheading %}Automatic findings from fixed business rules - every number traces back to a SQL query{% endblock %}
+{% block content %}
+{{ filter_bar(f, options, 'dashboard.insights') }}
+{% set groups = insights|groupby('area') %}
+{% for area, items in groups %}
+  <h2 class="h6 mt-3 mb-2">{{ area }} <span class="text-secondary fw-normal">({{ items|length }})</span></h2>
+  <div class="row g-3 mb-2">
+    {% for i in items %}<div class="col-md-6 col-xl-4">{{ insight_card(i) }}</div>{% endfor %}
+  </div>
+{% endfor %}
+<div class="card-x mt-3">
+  <h2>How insights are generated</h2>
+  <p class="small text-secondary mb-0">Each rule compares an aggregate against a business threshold - for example "revenue changed by more than 5% versus the previous period",
+    "discounts above 30% have a negative margin", "a class-A product is below its reorder point" or "RFM recency score is 1-2 with frequency score 3+".
+    No predictive models are trained; the rules live in <code>bizinsight/analytics/insights.py</code>.</p>
+</div>
+{% endblock %}

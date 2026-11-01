@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% from "_macros.html" import filter_bar, tile, stock_badge with context %}
+{% block title %}{{ info.name }}{% endblock %}
+{% block heading %}{{ info.name }}{% endblock %}
+{% block subheading %}{{ info.product_id }} · {{ info.category }} / {{ info.sub_category or '-' }} · Supplier: {{ info.supplier or '-' }}{% endblock %}
+{% block actions %}
+  <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('products.index', **f.args()) }}"><i class="bi bi-arrow-left"></i> Products</a>
+  {% if g.user.role == 'admin' %}<a class="btn btn-sm btn-outline-secondary" href="{{ url_for('data.product_form', product_id=info.product_id) }}"><i class="bi bi-pencil"></i> Edit</a>{% endif %}
+{% endblock %}
+{% block content %}
+<form class="filter-bar" method="get">
+  <div><label>From</label><input type="date" name="start" value="{{ f.start }}" class="form-control form-control-sm"></div>
+  <div><label>To</label><input type="date" name="end" value="{{ f.end }}" class="form-control form-control-sm"></div>
+  <div><button class="btn btn-sm btn-primary">Apply</button></div>
+  <div class="w-100 filter-label">{{ f.label }}</div>
+</form>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3 col-xl-2">{{ tile('Revenue', kpi.revenue|inr, 'currency-rupee', note=(kpi.orders|num) ~ ' orders') }}</div>
+  <div class="col-6 col-md-3 col-xl-2">{{ tile('Profit', kpi.profit|inr, 'cash-stack', note=(kpi.margin|pct) ~ ' margin') }}</div>
+  <div class="col-6 col-md-3 col-xl-2">{{ tile('Units sold', kpi.units|num, 'box', note=(kpi.customers|num) ~ ' customers') }}</div>
+  <div class="col-6 col-md-3 col-xl-2">{{ tile('Avg discount', kpi.avg_discount|pct, 'tag', note='List price ' ~ (info.unit_price|inr_full)) }}</div>
+  <div class="col-6 col-md-6 col-xl-2">{{ tile('Unit economics', ((info.unit_price - info.unit_cost) / info.unit_price if info.unit_price else 0)|pct, 'calculator', note='margin at list price · cost ' ~ (info.unit_cost|inr_full)) }}</div>
+  <div class="col-6 col-md-6 col-xl-2">
+    <div class="kpi"><div class="label"><i class="bi bi-boxes"></i>Stock</div>
+      <div class="value">{{ info.stock_qty|num }}</div>
+      <div class="delta">{% if stock %}{{ stock_badge(stock.status) }}{% if stock.days_cover is not none %} {{ stock.days_cover|round|int }} days cover{% endif %}{% endif %}</div></div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="card-x">
+      <h2>Monthly revenue</h2><div class="card-sub">First sale {{ kpi.first_sale or '-' }} · last sale {{ kpi.last_sale or '-' }}</div>
+      <div class="chart-box"><canvas id="pTrend"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card-x">
+      <h2>Revenue by region</h2><div class="card-sub">Net revenue</div>
+      <div class="chart-box short"><canvas id="pRegion"></canvas></div>
+      <h2 class="mt-3">Order outcomes</h2>
+      <table class="table-x">{% for s in statuses %}<tr><td>{{ s.label }}</td><td class="num">{{ s.orders|num }} orders</td></tr>{% endfor %}</table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  const t = {{ trend|tojson }};
+  BIZ.bar("pTrend", t.map(r => r.period), t.map(r => r.revenue), "inr", { label: "Revenue" });
+  const r = {{ regions|tojson }};
+  BIZ.bar("pRegion", r.map(x => x.label), r.map(x => x.revenue), "inr", { horizontal: true, label: "Revenue" });
+</script>
+{% endblock %}

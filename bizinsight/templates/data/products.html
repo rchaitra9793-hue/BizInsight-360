@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Product catalogue{% endblock %}
+{% block heading %}Product catalogue{% endblock %}
+{% block subheading %}{{ rows|length }} products{% endblock %}
+{% block actions %}{% if g.user.role == 'admin' %}<a class="btn btn-sm btn-primary" href="{{ url_for('data.product_form') }}"><i class="bi bi-plus-lg"></i> New product</a>{% endif %}{% endblock %}
+{% block content %}
+<form class="filter-bar" method="get">
+  <div><label for="q">Search</label><input id="q" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Name or ID"></div>
+  <div><label for="c">Category</label><select id="c" name="category" class="form-select form-select-sm"><option value="">All</option>
+    {% for c in categories %}<option {{ 'selected' if c == category }}>{{ c }}</option>{% endfor %}</select></div>
+  <div><button class="btn btn-sm btn-primary">Search</button></div>
+</form>
+<div class="card-x">
+  <div class="table-wrap"><table class="table-x">
+    <thead><tr><th>ID</th><th>Name</th><th>Category</th><th>Supplier</th><th class="num">Cost</th><th class="num">Price</th><th class="num">Margin</th><th class="num">Stock</th><th class="num">Reorder lvl</th><th class="num">Sales lines</th>{% if g.user.role == 'admin' %}<th></th>{% endif %}</tr></thead>
+    <tbody>{% for p in rows %}<tr>
+      <td>{{ p.product_id }}</td><td><a href="{{ url_for('products.detail', product_id=p.product_id) }}">{{ p.name }}</a></td>
+      <td>{{ p.category }}<div class="small text-secondary">{{ p.sub_category or '' }}</div></td><td class="small">{{ p.supplier or '-' }}</td>
+      <td class="num">{{ p.unit_cost|inr_full }}</td><td class="num">{{ p.unit_price|inr_full }}</td>
+      <td class="num">{{ ((p.unit_price - p.unit_cost) / p.unit_price if p.unit_price else 0)|pct }}</td>
+      <td class="num {{ 'neg' if p.stock_qty == 0 }}">{{ p.stock_qty|num }}</td><td class="num">{{ p.reorder_level }}</td><td class="num">{{ p.lines|num }}</td>
+      {% if g.user.role == 'admin' %}<td class="text-nowrap"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('data.product_form', product_id=p.product_id) }}" title="Edit"><i class="bi bi-pencil"></i></a>
+        {% if not p.lines %}<form method="post" action="{{ url_for('data.product_delete', product_id=p.product_id) }}" class="d-inline" onsubmit="return confirm('Delete {{ p.name }}?')">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}"><button class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button></form>{% endif %}</td>{% endif %}
+    </tr>{% else %}<tr><td colspan="11" class="empty">No products found.</td></tr>{% endfor %}</tbody>
+  </table></div>
+</div>
+{% endblock %}

@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% from "_macros.html" import filter_bar, tile, sharebar with context %}
+{% block title %}Customer analysis{% endblock %}
+{% block heading %}Customer analysis{% endblock %}
+{% block subheading %}RFM segmentation, retention and purchasing patterns{% endblock %}
+{% block content %}
+{{ filter_bar(f, options, 'customers.index') }}
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-4 col-xl">{{ tile('Active customers', summary.customers|num, 'people', note='placed a valid order') }}</div>
+  <div class="col-6 col-md-4 col-xl">{{ tile('New customers', summary.new_customers|num, 'person-plus', note='first-ever order in this period') }}</div>
+  <div class="col-6 col-md-4 col-xl">{{ tile('Repeat purchase rate', summary.repeat_rate|pct, 'arrow-repeat', note=(summary.repeat_customers|num) ~ ' ordered 2+ times') }}</div>
+  <div class="col-6 col-md-6 col-xl">{{ tile('Revenue per customer', summary.revenue_per_customer|inr, 'person-badge', note='historical value in period') }}</div>
+  <div class="col-12 col-md-6 col-xl">{{ tile('Orders per customer', '%.2f'|format(summary.orders_per_customer), 'bag', note='purchase frequency') }}</div>
+</div>
+
+<div class="card-x mb-3">
+  <h2>RFM segments</h2>
+  <div class="card-sub">Each customer is scored 1-5 on <strong>R</strong>ecency (days since last order), <strong>F</strong>requency (orders) and <strong>M</strong>onetary value (spend) using quintiles, then grouped by fixed rules.</div>
+  {% if segments %}
+  <div class="row g-3">
+    <div class="col-xl-4"><div class="chart-box"><canvas id="segChart"></canvas></div></div>
+    <div class="col-xl-8"><div class="table-wrap"><table class="table-x">
+      <thead><tr><th>Segment</th><th class="num">Customers</th><th class="num">Revenue share</th><th class="num">Avg recency</th><th class="num">Avg orders</th><th>Recommended action</th></tr></thead>
+      <tbody>{% for s in segments %}<tr>
+        <td style="min-width:200px"><a href="{{ url_for('customers.index', segment=s.segment, **f.args()) }}#rfm-list" class="fw-semibold">{{ s.segment }}</a><div class="small text-secondary">{{ s.description }}</div></td>
+        <td class="num">{{ s.customers|num }}</td><td class="num">{{ s.revenue_share|pct }}</td><td class="num">{{ s.avg_recency|round|int }} d</td>
+        <td class="num">{{ '%.1f'|format(s.avg_frequency) }}</td><td class="small" style="min-width:180px">{{ s.action }}</td></tr>{% endfor %}</tbody>
+    </table></div></div>
+  </div>
+  {% else %}<div class="empty">Not enough customers for RFM scoring.</div>{% endif %}
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-6">
+    <div class="card-x">
+      <h2>New vs returning customers</h2><div class="card-sub">Distinct buying customers per month</div>
+      <div class="chart-box"><canvas id="nvrChart"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card-x">
+      <h2>Cohort retention</h2>
+      <div class="card-sub">Share of customers from each first-purchase month who bought again N months later</div>
+      {% if cohort.rows %}
+      <div class="table-wrap"><table class="table-x heat" id="cohortTable">
+        <thead><tr><th>Cohort</th><th class="num">Size</th>{% for m in cohort.months %}<th class="num">M{{ m }}</th>{% endfor %}</tr></thead>
+        <tbody>{% for r in cohort.rows %}<tr><td>{{ r.cohort }}</td><td class="num">{{ r.size }}</td>
+          {% for v in r.cells %}<td class="cell" data-v="{{ v if v is not none else '' }}">{{ (v * 100)|round|int if v is not none else '' }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+      </table></div>
+      <p class="small text-secondary mt-2 mb-0">Values are percentages. M0 is the first-purchase month (always 100).</p>
+      {% else %}<div class="empty">No cohort data.</div>{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-4">
+    <div class="card-x">
+      <h2>Age groups</h2><div class="card-sub">Net revenue by customer age</div>
+      <div class="chart-box short"><canvas id="ageChart"></canvas></div>
+      <table class="table-x mt-2"><thead><tr><th>Age</th><th class="num">Customers</th><th class="num">AOV</th></tr></thead>
+        <tbody>{% for a in demo.age_groups %}<tr><td>{{ a.label }}</td><td class="num">{{ a.customers|num }}</td><td class="num">{{ a.aov|inr }}</td></tr>{% endfor %}</tbody></table>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card-x">
+      <h2>Gender</h2><div class="card-sub">Customers and revenue</div>
+      {% set gtotal = demo.gender|sum(attribute='revenue') %}
+      <table class="table-x"><thead><tr><th>Gender</th><th class="num">Customers</th><th class="num">Revenue</th><th>Share</th></tr></thead>
+        <tbody>{% for g_ in demo.gender %}<tr><td>{{ g_.label }}</td><td class="num">{{ g_.customers|num }}</td><td class="num">{{ g_.revenue|inr }}</td>
+          <td style="width:90px">{{ sharebar(g_.revenue / gtotal if gtotal else 0) }}<div class="small text-secondary">{{ (g_.revenue / gtotal if gtotal else 0)|pct }}</div></td></tr>{% endfor %}</tbody></table>
+      <h2 class="mt-3">Category preference by gender</h2><div class="card-sub">Share of each gender's spend</div>
+      <div class="chart-box short"><canvas id="gcChart"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card-x">
+      <h2>Top cities</h2><div class="card-sub">By net revenue</div>
+      <div class="chart-box tall"><canvas id="cityChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card-x">
+      <h2>Top customers</h2><div class="card-sub">Highest spend in the period</div>
+      <div class="table-wrap"><table class="table-x">
+        <thead><tr><th>Customer</th><th>City</th><th class="num">Orders</th><th class="num">Revenue</th><th class="num">Last order</th></tr></thead>
+        <tbody>{% for c in top %}<tr><td><a href="{{ url_for('customers.detail', customer_id=c.customer_id) }}">{{ c.customer_name }}</a><div class="small text-secondary">{{ c.customer_id }} · {{ c.segment }}</div></td>
+          <td>{{ c.city }}</td><td class="num">{{ c.orders }}</td><td class="num">{{ c.revenue|inr }}</td><td class="num">{{ c.last_order }}</td></tr>{% endfor %}</tbody>
+      </table></div>
+    </div>
+  </div>
+  <div class="col-lg-6" id="rfm-list">
+    <div class="card-x">
+      <div class="d-flex justify-content-between flex-wrap gap-2">
+        <div><h2>Customer RFM scores</h2><div class="card-sub">{{ selected_segment or 'All segments' }} · top 50 by spend
+          {% if selected_segment %}· <a href="{{ url_for('customers.index', **f.args()) }}#rfm-list">show all</a>{% endif %}</div></div>
+        <a class="btn btn-sm btn-outline-secondary align-self-start" href="{{ url_for('reports.download', report='customers', format='csv', **f.args()) }}"><i class="bi bi-download"></i> Export all</a>
+      </div>
+      <div class="table-wrap table-scroll" style="max-height:420px"><table class="table-x">
+        <thead><tr><th>Customer</th><th>Segment</th><th class="num">R</th><th class="num">F</th><th class="num">M</th><th class="num">Recency</th><th class="num">Orders</th><th class="num">Spend</th></tr></thead>
+        <tbody>{% for c in rfm_rows %}<tr><td><a href="{{ url_for('customers.detail', customer_id=c.customer_id) }}">{{ c.customer_name }}</a></td>
+          <td class="small">{{ c.rfm_segment }}</td><td class="num">{{ c.r }}</td><td class="num">{{ c.f }}</td><td class="num">{{ c.m }}</td>
+          <td class="num">{{ c.recency }} d</td><td class="num">{{ c.frequency }}</td><td class="num">{{ c.monetary|inr }}</td></tr>{% endfor %}</tbody>
+      </table></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const seg = {{ segments|tojson }};
+  BIZ.bar("segChart", seg.map(s => s.segment), seg.map(s => s.customers), "num", { horizontal: true, label: "Customers" });
+
+  const nvr = {{ new_vs_returning|tojson }};
+  BIZ.bars("nvrChart", nvr.map(r => r.month), [
+    { label: "Returning", data: nvr.map(r => r.returning_customers), color: "series-1" },
+    { label: "New", data: nvr.map(r => r.new_customers), color: "series-2" },
+  ], "num", { stacked: true });
+
+  // Age bands are ordered, so they take the ordinal (sequential) ramp
+  const ages = {{ demo.age_groups|tojson }};
+  const ramp = ["seq-2", "seq-3", "seq-4", "seq-5", "seq-6", "seq-6"];
+  BIZ.bar("ageChart", ages.map(a => a.label), ages.map(a => a.revenue), "inr", { label: "Revenue", colorFn: (_, i) => BIZ.css(ramp[i]) });
+
+  const gc = {{ demo.gender_category|tojson }};
+  const genders = [...new Set(gc.map(r => r.gender))];
+  const catsG = [...new Set(gc.map(r => r.category))].sort();
+  const totals = Object.fromEntries(genders.map(g => [g, gc.filter(r => r.gender === g).reduce((a, r) => a + r.revenue, 0)]));
+  BIZ.bars("gcChart", catsG.map(c => c.split(" ")[0]), genders.map((g, i) => ({
+    label: g, color: "series-" + (i + 1),
+    data: catsG.map(c => { const r = gc.find(x => x.gender === g && x.category === c); return r ? r.revenue / totals[g] : 0; }),
+  })), "pct");
+
+  const cities = {{ cities|tojson }};
+  BIZ.bar("cityChart", cities.map(c => c.label), cities.map(c => c.revenue), "inr", { horizontal: true, label: "Revenue" });
+
+  function paintCohort() {
+    const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+    const lo = hex(BIZ.css("surface-2")), hi = hex(BIZ.css("seq-5"));
+    document.querySelectorAll("#cohortTable td.cell").forEach((td) => {
+      if (td.dataset.v === "") { td.style.background = ""; return; }
+      // Scale to 0-50% so later months (usually 10-30%) still show contrast; M0 saturates
+      const t = Math.min(parseFloat(td.dataset.v) / 0.5, 1);
+      td.style.background = "rgb(" + lo.map((x, i) => Math.round(x + (hi[i] - x) * t)).join(",") + ")";
+      td.style.color = t > 0.55 ? "#fff" : "";
+    });
+  }
+  paintCohort();
+  document.querySelector("[aria-label='Toggle dark mode']").addEventListener("click", () => setTimeout(paintCohort, 0));
+</script>
+{% endblock %}

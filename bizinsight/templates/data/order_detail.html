@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% from "_macros.html" import order_badge %}
+{% block title %}Order {{ order.order_id }}{% endblock %}
+{% block heading %}Order {{ order.order_id }}{% endblock %}
+{% block subheading %}{{ order.order_date }} · {{ order.customer_name }}, {{ order.city or '-' }}{% endblock %}
+{% block actions %}<a class="btn btn-sm btn-outline-secondary" href="{{ url_for('data.orders') }}"><i class="bi bi-arrow-left"></i> Orders</a>{% endblock %}
+{% block content %}
+{% set total = items|sum(attribute='sales') %}{% set profit = items|sum(attribute='profit') %}
+<div class="row g-3 mb-3">
+  <div class="col-md-3"><div class="kpi"><div class="label">Status</div><div class="value fs-5 mt-1">{{ order_badge(order.status) }}</div></div></div>
+  <div class="col-md-3"><div class="kpi"><div class="label">Order value</div><div class="value">{{ total|inr_full }}</div></div></div>
+  <div class="col-md-3"><div class="kpi"><div class="label">Profit</div><div class="value {{ 'neg' if profit < 0 }}">{{ profit|inr_full }}</div><div class="delta">{{ (profit / total if total else 0)|pct }} margin</div></div></div>
+  <div class="col-md-3"><div class="kpi"><div class="label">Payment &amp; shipping</div><div class="fw-semibold mt-1">{{ order.payment_method or '-' }}</div>
+    <div class="delta">{{ order.ship_mode or '-' }}{% if order.ship_date %} · shipped {{ order.ship_date }}{% endif %}</div></div></div>
+</div>
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="card-x">
+      <h2>Items</h2>
+      <div class="table-wrap"><table class="table-x">
+        <thead><tr><th>Product</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">Discount</th><th class="num">Sales</th><th class="num">Cost</th><th class="num">Profit</th></tr></thead>
+        <tbody>{% for i in items %}<tr><td><a href="{{ url_for('products.detail', product_id=i.product_id) }}">{{ i.name }}</a><div class="small text-secondary">{{ i.category }}</div></td>
+          <td class="num">{{ i.quantity }}</td><td class="num">{{ i.unit_price|inr_full }}</td><td class="num">{{ i.discount|pct(0) }}</td>
+          <td class="num">{{ i.sales|inr_full }}</td><td class="num">{{ i.cost|inr_full }}</td><td class="num {{ 'neg' if i.profit < 0 }}">{{ i.profit|inr_full }}</td></tr>{% endfor %}</tbody>
+      </table></div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card-x">
+      <h2>Update status</h2>
+      <div class="card-sub">Marking an order Cancelled or Returned removes it from revenue and puts the items back in stock.</div>
+      {% if g.user.role == 'admin' %}
+      <form method="post" action="{{ url_for('data.order_status', order_id=order.order_id) }}" class="d-flex gap-2">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <select name="status" class="form-select form-select-sm">{% for s in statuses %}<option {{ 'selected' if s == order.status }}>{{ s }}</option>{% endfor %}</select>
+        <button class="btn btn-sm btn-primary">Save</button>
+      </form>
+      {% else %}<div class="small text-secondary">Administrators only.</div>{% endif %}
+      <hr>
+      <div class="small"><strong>Customer:</strong> <a href="{{ url_for('customers.detail', customer_id=order.customer_id) }}">{{ order.customer_name }}</a> ({{ order.customer_id }})<br>
+        {{ order.city or '' }}{% if order.state %}, {{ order.state }}{% endif %}{% if order.region %} · {{ order.region }}{% endif %}</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

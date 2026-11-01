@@ -1,0 +1,18 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Local database and uploads (contain user accounts / password hashes)
+instance/
+*.db
+*.sqlite
+*.sqlite3
+
+# Secrets and editor files
+.env
+.env.*
+.vscode/
+.idea/

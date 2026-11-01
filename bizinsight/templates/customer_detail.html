@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% from "_macros.html" import tile, order_badge %}
+{% block title %}{{ p.info.name }}{% endblock %}
+{% block heading %}{{ p.info.name }}{% endblock %}
+{% block subheading %}{{ p.info.customer_id }} · {{ p.info.city or '-' }}, {{ p.info.state or '-' }} ({{ p.info.region or '-' }}) · {{ p.info.segment or '-' }}{% if p.info.age %} · {{ p.info.gender }}, {{ p.info.age }}{% endif %}{% endblock %}
+{% block actions %}<a class="btn btn-sm btn-outline-secondary" href="{{ url_for('customers.index', **f.args()) }}"><i class="bi bi-arrow-left"></i> Customers</a>{% endblock %}
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3">{{ tile('Lifetime value', p.lifetime_value|inr, 'gem', note='net of returns and cancellations') }}</div>
+  <div class="col-6 col-md-3">{{ tile('Orders', p.net_orders, 'bag-check', note=(p.orders|length) ~ ' including returned / cancelled') }}</div>
+  <div class="col-6 col-md-3">{{ tile('Avg order value', p.aov|inr, 'receipt', note='Favourite: ' ~ (p.favourite_category or '-')) }}</div>
+  <div class="col-6 col-md-3">{{ tile('Customer since', p.first_order or '-', 'calendar-check', note='last order ' ~ (p.last_order or '-')) }}</div>
+</div>
+<div class="card-x">
+  <h2>Order history</h2>
+  <div class="table-wrap"><table class="table-x">
+    <thead><tr><th>Order</th><th>Date</th><th>Payment</th><th class="num">Items</th><th class="num">Value</th><th>Status</th></tr></thead>
+    <tbody>{% for o in p.orders %}<tr><td><a href="{{ url_for('data.order_detail', order_id=o.order_id) }}">{{ o.order_id }}</a></td><td>{{ o.order_date }}</td>
+      <td>{{ o.payment_method or '-' }}</td><td class="num">{{ o.item_count }}</td><td class="num">{{ o.value|inr_full }}</td><td>{{ order_badge(o.status) }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+</div>
+{% endblock %}

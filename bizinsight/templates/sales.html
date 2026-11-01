@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% from "_macros.html" import filter_bar, tile, sharebar with context %}
+{% block title %}Sales analysis{% endblock %}
+{% block heading %}Sales analysis{% endblock %}
+{% block subheading %}Trends, growth and where revenue comes from{% endblock %}
+{% block content %}
+{{ filter_bar(f, options, 'sales.index', {'g': granularity}) }}
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-4 col-xl-2">{{ tile('Net revenue', kpi.revenue|inr, 'currency-rupee', kpi.change.revenue) }}</div>
+  <div class="col-6 col-md-4 col-xl-2">{{ tile('Orders', kpi.orders|num, 'bag-check', kpi.change.orders) }}</div>
+  <div class="col-6 col-md-4 col-xl-2">{{ tile('Avg order value', kpi.aov|inr, 'receipt', kpi.change.aov) }}</div>
+  <div class="col-6 col-md-4 col-xl-2">{{ tile('Units sold', kpi.units|num, 'box', kpi.change.units) }}</div>
+  <div class="col-6 col-md-4 col-xl-2">{{ tile('Return rate', kpi.return_rate|pct, 'arrow-return-left', kpi.change.return_rate, points=True, invert=True) }}</div>
+  <div class="col-6 col-md-4 col-xl-2">{{ tile('Cancellation rate', kpi.cancel_rate|pct, 'x-circle', note=(kpi.returned_value|inr) ~ ' revenue lost to returns') }}</div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-8">
+    <div class="card-x">
+      <div class="d-flex flex-wrap justify-content-between gap-2">
+        <div><h2>Revenue trend</h2><div class="card-sub">Net revenue per {{ granularity }} with a 3-period moving average</div></div>
+        <div class="btn-group btn-group-sm" role="group" aria-label="Granularity">
+          {% for g_ in ['day','week','month','quarter'] %}
+            <a class="btn btn-outline-secondary {{ 'active' if g_ == granularity }}" href="{{ url_for('sales.index', g=g_, **f.args()) }}">{{ g_|title }}</a>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="chart-box tall"><canvas id="trendChart"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card-x">
+      <h2>Orders per {{ granularity }}</h2>
+      <div class="card-sub">Order count (separate chart - different scale from revenue)</div>
+      <div class="chart-box tall"><canvas id="ordersChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-5">
+    <div class="card-x">
+      <h2>Category performance</h2>
+      <div class="card-sub">Net revenue by category</div>
+      <div class="chart-box short"><canvas id="catChart"></canvas></div>
+      <table class="table-x mt-2">
+        <thead><tr><th>Category</th><th class="num">Revenue</th><th class="num">Orders</th><th class="num">AOV</th><th class="num">Share</th></tr></thead>
+        <tbody>{% for c in categories %}<tr><td>{{ c.label }}</td><td class="num">{{ c.revenue|inr }}</td><td class="num">{{ c.orders|num }}</td><td class="num">{{ c.aov|inr }}</td><td class="num">{{ c.share|pct }}</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card-x">
+      <h2>Top sub-categories</h2>
+      <div class="card-sub">Top 12 by net revenue</div>
+      <div class="chart-box tall"><canvas id="subChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-4">
+    <div class="card-x">
+      <h2>Region</h2><div class="card-sub">Net revenue by customer region</div>
+      <div class="chart-box short"><canvas id="regionChart"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card-x">
+      <h2>Top 10 states</h2><div class="card-sub">By net revenue</div>
+      <table class="table-x">
+        <thead><tr><th>State</th><th class="num">Revenue</th><th class="num">Customers</th><th></th></tr></thead>
+        <tbody>{% for s in states %}<tr><td>{{ s.label }}</td><td class="num">{{ s.revenue|inr }}</td><td class="num">{{ s.customers|num }}</td><td style="width:70px">{{ sharebar(s.revenue / states[0].revenue) }}</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card-x">
+      <h2>Day of week</h2><div class="card-sub">Average net revenue per trading day</div>
+      <div class="chart-box short"><canvas id="dowChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-4">
+    <div class="card-x">
+      <h2>Payment methods</h2><div class="card-sub">Share of net revenue</div>
+      <div class="chart-box short"><canvas id="payChart"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card-x">
+      <h2>Shipping mode</h2><div class="card-sub">Orders by delivery option</div>
+      <div class="chart-box short"><canvas id="shipChart"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card-x">
+      <h2>Customer segment</h2><div class="card-sub">Revenue and average order value</div>
+      <table class="table-x">
+        <thead><tr><th>Segment</th><th class="num">Revenue</th><th class="num">AOV</th><th class="num">Share</th></tr></thead>
+        <tbody>{% for s in segments %}<tr><td>{{ s.label }}</td><td class="num">{{ s.revenue|inr }}</td><td class="num">{{ s.aov|inr }}</td><td class="num">{{ s.share|pct }}</td></tr>{% endfor %}</tbody>
+      </table>
+      <h2 class="mt-3">Order status</h2>
+      <table class="table-x">
+        <thead><tr><th>Status</th><th class="num">Orders</th><th class="num">Value</th></tr></thead>
+        <tbody>{% for s in statuses %}<tr><td>{{ s.label }}</td><td class="num">{{ s.orders|num }}</td><td class="num">{{ s.revenue|inr }}</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-5">
+    <div class="card-x">
+      <h2>Return rate by category</h2><div class="card-sub">Share of orders that were returned</div>
+      <div class="chart-box short"><canvas id="returnChart"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card-x">
+      <h2>Order value distribution</h2>
+      <div class="card-sub">Descriptive statistics of net order value (histogram capped at the 95th percentile)</div>
+      {% if order_stats %}
+      <div class="row g-2 mb-2 small">
+        {% for label, key in [('Mean','mean'),('Median','median'),('Std deviation','stdev'),('25th pct','p25'),('75th pct','p75'),('90th pct','p90'),('Min','min'),('Max','max')] %}
+          <div class="col-3"><div class="text-secondary">{{ label }}</div><div class="fw-semibold">{{ order_stats[key]|inr_full }}</div></div>
+        {% endfor %}
+      </div>
+      <div class="chart-box short"><canvas id="histChart"></canvas></div>
+      <p class="small text-secondary mb-0 mt-2">The mean is {{ '%.1f'|format(order_stats.mean / order_stats.median) }}x the median: a few large orders pull the average up, so the median is the better "typical order".</p>
+      {% else %}<div class="empty">Not enough orders.</div>{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="card-x">
+  <h2>Monthly growth table</h2>
+  <div class="card-sub">Month-on-month (MoM) and year-on-year (YoY) revenue growth</div>
+  <div class="table-wrap table-scroll"><table class="table-x">
+    <thead><tr><th>Month</th><th class="num">Revenue</th><th class="num">Profit</th><th class="num">Margin</th><th class="num">Orders</th><th class="num">Customers</th><th class="num">AOV</th><th class="num">MoM</th><th class="num">YoY</th></tr></thead>
+    <tbody>
+    {% for m in monthly|reverse %}
+      <tr><td>{{ m.month }}</td><td class="num">{{ m.revenue|inr_full }}</td><td class="num">{{ m.profit|inr_full }}</td><td class="num">{{ m.margin|pct }}</td>
+        <td class="num">{{ m.orders|num }}</td><td class="num">{{ m.customers|num }}</td><td class="num">{{ m.aov|inr }}</td>
+        <td class="num {{ 'pos' if m.mom and m.mom > 0 else 'neg' if m.mom and m.mom < 0 }}">{{ m.mom|pct if m.mom is not none else '-' }}</td>
+        <td class="num {{ 'pos' if m.yoy and m.yoy > 0 else 'neg' if m.yoy and m.yoy < 0 }}">{{ m.yoy|pct if m.yoy is not none else '-' }}</td></tr>
+    {% endfor %}
+    </tbody></table></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const trend = {{ trend|tojson }};
+  BIZ.line("trendChart", trend.map(r => r.period), [
+    { label: "Revenue", data: trend.map(r => r.revenue), color: "series-1", fill: true },
+    { label: "3-period moving average", data: trend.map(r => r.moving_avg), muted: true },
+  ], "inr");
+  BIZ.bar("ordersChart", trend.map(r => r.period), trend.map(r => r.orders), "num", { label: "Orders" });
+  const cats = {{ categories|tojson }};
+  BIZ.bar("catChart", cats.map(c => c.label), cats.map(c => c.revenue), "inr", { horizontal: true, label: "Revenue" });
+  const subs = {{ sub_categories[:12]|tojson }};
+  BIZ.bar("subChart", subs.map(c => c.label), subs.map(c => c.revenue), "inr", { horizontal: true, label: "Revenue" });
+  const regions = {{ regions|tojson }};
+  BIZ.bar("regionChart", regions.map(r => r.label), regions.map(r => r.revenue), "inr", { label: "Revenue" });
+  const dow = {{ weekdays|tojson }};
+  BIZ.bar("dowChart", dow.map(d => d.label.slice(0, 3)), dow.map(d => d.avg_daily_revenue), "inr", { label: "Avg daily revenue" });
+  const pay = {{ payments|tojson }};
+  BIZ.donut("payChart", pay.map(p => p.label), pay.map(p => p.revenue), "inr");
+  const ship = {{ ship_modes|tojson }};
+  BIZ.bar("shipChart", ship.map(s => s.label), ship.map(s => s.orders), "num", { label: "Orders" });
+  const ret = {{ returns|tojson }};
+  BIZ.bar("returnChart", ret.map(r => r.label), ret.map(r => r.rate), "pct", { horizontal: true, label: "Return rate" });
+  {% if order_stats %}
+  const hist = {{ order_stats.histogram|tojson }};
+  BIZ.bar("histChart", hist.labels, hist.counts, "num", { label: "Orders", catAxis: { ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 7 } } });
+  {% endif %}
+</script>
+{% endblock %}

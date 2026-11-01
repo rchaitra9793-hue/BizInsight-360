@@ -1,0 +1,21 @@
+{% extends "auth/_layout.html" %}
+{% block title %}Create account{% endblock %}
+{% block form %}
+<h2 class="h4 mb-1">Create an account</h2>
+<p class="text-secondary small mb-4">New accounts get analyst access: all dashboards and reports, no data changes.</p>
+<form method="post">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <div class="mb-3"><label class="form-label" for="name">Full name</label>
+    <input class="form-control" id="name" name="name" required value="{{ request.form.name }}"></div>
+  <div class="mb-3"><label class="form-label" for="email">Email</label>
+    <input class="form-control" id="email" name="email" type="email" required value="{{ request.form.email }}"></div>
+  <div class="row g-2 mb-3">
+    <div class="col"><label class="form-label" for="password">Password</label>
+      <input class="form-control" id="password" name="password" type="password" minlength="6" required></div>
+    <div class="col"><label class="form-label" for="confirm">Confirm</label>
+      <input class="form-control" id="confirm" name="confirm" type="password" minlength="6" required></div>
+  </div>
+  <button class="btn btn-primary w-100">Create account</button>
+</form>
+<p class="small text-secondary mt-3 mb-0">Already registered? <a href="{{ url_for('auth.login') }}">Sign in</a></p>
+{% endblock %}

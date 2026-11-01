@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Account{% endblock %}
+{% block heading %}Account{% endblock %}
+{% block subheading %}{{ g.user.email }}{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="card-x">
+      <h2>Change password</h2>
+      <div class="card-sub">At least 6 characters.</div>
+      <form method="post">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <div class="mb-2"><label class="form-label small" for="cur">Current password</label><input id="cur" class="form-control" type="password" name="current" required></div>
+        <div class="mb-2"><label class="form-label small" for="new">New password</label><input id="new" class="form-control" type="password" name="new" minlength="6" required></div>
+        <div class="mb-3"><label class="form-label small" for="conf">Confirm new password</label><input id="conf" class="form-control" type="password" name="confirm" minlength="6" required></div>
+        <button class="btn btn-primary">Update password</button>
+      </form>
+    </div>
+  </div>
+  {% if users %}
+  <div class="col-lg-8">
+    <div class="card-x">
+      <h2>Users</h2>
+      <div class="card-sub">Admins can import data, edit products, record orders and adjust stock. Analysts are read-only.</div>
+      <div class="table-wrap"><table class="table-x">
+        <thead><tr><th>Name</th><th>Email</th><th>Joined</th><th>Role</th></tr></thead>
+        <tbody>
+        {% for u in users %}
+          <tr><td>{{ u.name }}</td><td>{{ u.email }}</td><td>{{ u.created_at[:10] }}</td>
+            <td>{% if u.id == g.user.id %}<span class="badge-x s-info"><span class="dot"></span>{{ u.role|title }} (you)</span>
+              {% else %}
+              <form method="post" action="{{ url_for('auth.set_role', user_id=u.id) }}" class="d-flex gap-1">
+                <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+                <select name="role" class="form-select form-select-sm" style="width:auto">
+                  <option value="analyst" {{ 'selected' if u.role == 'analyst' }}>Analyst</option>
+                  <option value="admin" {{ 'selected' if u.role == 'admin' }}>Admin</option>
+                </select><button class="btn btn-sm btn-outline-secondary">Save</button>
+              </form>{% endif %}</td></tr>
+        {% endfor %}
+        </tbody></table></div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

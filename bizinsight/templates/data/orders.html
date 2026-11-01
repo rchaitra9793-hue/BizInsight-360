@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "_macros.html" import order_badge %}
+{% block title %}Orders{% endblock %}
+{% block heading %}Orders{% endblock %}
+{% block subheading %}{{ total|num }} orders{% endblock %}
+{% block actions %}{% if g.user.role == 'admin' %}<a class="btn btn-sm btn-primary" href="{{ url_for('data.order_new') }}"><i class="bi bi-plus-lg"></i> New order</a>{% endif %}{% endblock %}
+{% block content %}
+<form class="filter-bar" method="get">
+  <div><label for="q">Search</label><input id="q" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Order ID, customer name or ID"></div>
+  <div><label for="s">Status</label><select id="s" name="status" class="form-select form-select-sm"><option value="">All</option>
+    {% for s in statuses %}<option {{ 'selected' if s == status }}>{{ s }}</option>{% endfor %}</select></div>
+  <div><button class="btn btn-sm btn-primary">Search</button></div>
+</form>
+<div class="card-x">
+  <div class="table-wrap"><table class="table-x">
+    <thead><tr><th>Order</th><th>Date</th><th>Customer</th><th>City</th><th>Payment</th><th>Shipping</th><th class="num">Items</th><th class="num">Value</th><th>Status</th></tr></thead>
+    <tbody>{% for o in rows %}<tr><td><a href="{{ url_for('data.order_detail', order_id=o.order_id) }}">{{ o.order_id }}</a></td><td>{{ o.order_date }}</td>
+      <td><a href="{{ url_for('customers.detail', customer_id=o.customer_id) }}">{{ o.customer_name }}</a></td><td>{{ o.city or '-' }}</td>
+      <td>{{ o.payment_method or '-' }}</td><td>{{ o.ship_mode or '-' }}</td><td class="num">{{ o.item_count }}</td><td class="num">{{ o.value|inr_full }}</td><td>{{ order_badge(o.status) }}</td></tr>
+    {% else %}<tr><td colspan="9" class="empty">No orders found.</td></tr>{% endfor %}</tbody>
+  </table></div>
+  {% if pages > 1 %}
+  <nav class="d-flex justify-content-between align-items-center mt-3 small">
+    <span class="text-secondary">Page {{ page }} of {{ pages }}</span>
+    <div class="btn-group btn-group-sm">
+      <a class="btn btn-outline-secondary {{ 'disabled' if page <= 1 }}" href="{{ url_for('data.orders', q=q, status=status, page=page - 1) }}">Previous</a>
+      <a class="btn btn-outline-secondary {{ 'disabled' if page >= pages }}" href="{{ url_for('data.orders', q=q, status=status, page=page + 1) }}">Next</a>
+    </div>
+  </nav>
+  {% endif %}
+</div>
+{% endblock %}

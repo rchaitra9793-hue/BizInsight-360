@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="auth-page">
+  <section class="auth-hero">
+    <div class="d-flex align-items-center gap-2 mb-4"><span class="brand-mark">360</span><strong>BizInsight 360</strong></div>
+    <h1>See your whole e-commerce business in one place.</h1>
+    <p class="lead opacity-75">Sales, profit, inventory and customer analytics built on SQL and business rules.</p>
+    <ul class="list-unstyled mt-3">
+      <li><i class="bi bi-check2-circle"></i> Live KPIs with period-over-period comparison</li>
+      <li><i class="bi bi-check2-circle"></i> Profit leaks, discount impact and loss makers</li>
+      <li><i class="bi bi-check2-circle"></i> Stock alerts, days of cover and reorder suggestions</li>
+      <li><i class="bi bi-check2-circle"></i> RFM customer segments and cohort retention</li>
+      <li><i class="bi bi-check2-circle"></i> CSV import and Excel / CSV report export</li>
+    </ul>
+  </section>
+  <section class="auth-form">
+    <div class="auth-card">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for cat, msg in messages %}<div class="alert alert-{{ cat }} py-2">{{ msg }}</div>{% endfor %}
+      {% endwith %}
+      {% block form %}{% endblock %}
+    </div>
+  </section>
+</div>
+{% endblock %}

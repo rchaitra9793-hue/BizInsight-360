@@ -1,0 +1,105 @@
+product_id,name,category,sub_category,unit_cost,unit_price,stock_qty,reorder_level,supplier
+P0001,Volt 5G Smartphone,Electronics,Mobiles,16233.23,18999.0,43,9,Shenzhen Tech Traders
+P0002,Nexa 5G Smartphone,Electronics,Mobiles,11533.06,14489.0,32,5,Bharat Electronics Distributors
+P0003,Volt Smartphone Lite,Electronics,Mobiles,8257.23,9999.0,20,5,Shenzhen Tech Traders
+P0004,Nexa Smartphone Lite,Electronics,Mobiles,6159.05,7989.0,0,5,Bharat Electronics Distributors
+P0005,Volt Wireless Earbuds,Electronics,Audio,1145.23,1999.0,103,5,Shenzhen Tech Traders
+P0006,Nexa Wireless Earbuds,Electronics,Audio,850.61,1579.0,0,5,Bharat Electronics Distributors
+P0007,Volt Bluetooth Speaker,Electronics,Audio,1388.23,2499.0,3,5,Shenzhen Tech Traders
+P0008,Nexa Bluetooth Speaker,Electronics,Audio,1287.62,2239.0,16,5,Bharat Electronics Distributors
+P0009,Volt Over-Ear Headphones,Electronics,Audio,2409.92,3999.0,13,5,Shenzhen Tech Traders
+P0010,Nexa Over-Ear Headphones,Electronics,Audio,1886.92,3099.0,65,5,Bharat Electronics Distributors
+P0011,Volt Power Bank 20000mAh,Electronics,Accessories,789.73,1499.0,10,5,Shenzhen Tech Traders
+P0012,Nexa Power Bank 20000mAh,Electronics,Accessories,634.26,1199.0,11,5,Bharat Electronics Distributors
+P0013,Volt 65W Fast Charger,Electronics,Accessories,596.54,1199.0,13,5,Shenzhen Tech Traders
+P0014,Nexa 65W Fast Charger,Electronics,Accessories,451.2,949.0,25,5,Bharat Electronics Distributors
+P0015,Volt USB-C Cable,Electronics,Accessories,124.66,299.0,20,5,Shenzhen Tech Traders
+P0016,Nexa USB-C Cable,Electronics,Accessories,92.76,239.0,26,8,Bharat Electronics Distributors
+P0017,Volt Smartwatch,Electronics,Wearables,2185.65,3499.0,49,5,Shenzhen Tech Traders
+P0018,Nexa Smartwatch,Electronics,Wearables,1716.12,2909.0,18,5,Bharat Electronics Distributors
+P0019,Volt Fitness Band,Electronics,Wearables,1020.08,1799.0,10,5,Shenzhen Tech Traders
+P0020,Nexa Fitness Band,Electronics,Wearables,789.41,1429.0,2,5,Bharat Electronics Distributors
+P0021,Volt Wireless Mouse,Electronics,Computers,369.53,699.0,8,40,Shenzhen Tech Traders
+P0022,Nexa Wireless Mouse,Electronics,Computers,324.03,609.0,16,5,Bharat Electronics Distributors
+P0023,Volt Mechanical Keyboard,Electronics,Computers,2012.02,3299.0,44,6,Shenzhen Tech Traders
+P0024,Nexa Mechanical Keyboard,Electronics,Computers,1711.31,2599.0,118,38,Bharat Electronics Distributors
+P0025,Urbane Cotton T-Shirt,Fashion,Men's Clothing,230.53,499.0,26,5,Tiruppur Textiles
+P0026,Desi Threads Cotton T-Shirt,Fashion,Men's Clothing,181.6,409.0,37,5,Mumbai Fashion House
+P0027,Urbane Slim Fit Jeans,Fashion,Men's Clothing,729.01,1499.0,17,5,Tiruppur Textiles
+P0028,Desi Threads Slim Fit Jeans,Fashion,Men's Clothing,620.81,1189.0,12,5,Mumbai Fashion House
+P0029,Urbane Formal Shirt,Fashion,Men's Clothing,576.97,1199.0,37,5,Tiruppur Textiles
+P0030,Desi Threads Formal Shirt,Fashion,Men's Clothing,473.15,1029.0,18,5,Mumbai Fashion House
+P0031,Urbane Printed Kurta,Fashion,Women's Clothing,437.33,999.0,6,5,Tiruppur Textiles
+P0032,Desi Threads Printed Kurta,Fashion,Women's Clothing,377.0,859.0,8,5,Mumbai Fashion House
+P0033,Urbane Saree,Fashion,Women's Clothing,1318.41,2499.0,0,5,Tiruppur Textiles
+P0034,Desi Threads Saree,Fashion,Women's Clothing,1106.38,2219.0,0,5,Mumbai Fashion House
+P0035,Urbane Western Dress,Fashion,Women's Clothing,877.02,1799.0,0,5,Tiruppur Textiles
+P0036,Desi Threads Western Dress,Fashion,Women's Clothing,684.57,1399.0,12,5,Mumbai Fashion House
+P0037,Urbane Running Shoes,Fashion,Footwear,1729.16,2999.0,26,5,Tiruppur Textiles
+P0038,Desi Threads Running Shoes,Fashion,Footwear,1294.55,2469.0,16,5,Mumbai Fashion House
+P0039,Urbane Casual Sneakers,Fashion,Footwear,994.42,1999.0,13,5,Tiruppur Textiles
+P0040,Desi Threads Casual Sneakers,Fashion,Footwear,830.89,1539.0,11,5,Mumbai Fashion House
+P0041,Urbane Sandals,Fashion,Footwear,390.96,799.0,0,5,Tiruppur Textiles
+P0042,Desi Threads Sandals,Fashion,Footwear,305.89,649.0,93,5,Mumbai Fashion House
+P0043,Urbane Leather Wallet,Fashion,Accessories,305.57,699.0,8,5,Tiruppur Textiles
+P0044,Desi Threads Leather Wallet,Fashion,Accessories,214.25,529.0,18,5,Mumbai Fashion House
+P0045,Urbane Analog Watch,Fashion,Accessories,963.64,1999.0,14,5,Tiruppur Textiles
+P0046,Desi Threads Analog Watch,Fashion,Accessories,728.91,1509.0,12,5,Mumbai Fashion House
+P0047,HomeNest Non-Stick Pan Set,Home & Kitchen,Cookware,1150.92,1899.0,0,5,Delhi Home Supplies
+P0048,ChefPro Non-Stick Pan Set,Home & Kitchen,Cookware,886.52,1429.0,20,5,Rajkot Appliances Co.
+P0049,HomeNest Pressure Cooker 5L,Home & Kitchen,Cookware,1398.46,2199.0,29,5,Delhi Home Supplies
+P0050,ChefPro Pressure Cooker 5L,Home & Kitchen,Cookware,1230.89,1929.0,0,5,Rajkot Appliances Co.
+P0051,HomeNest Mixer Grinder,Home & Kitchen,Appliances,2464.14,3499.0,60,5,Delhi Home Supplies
+P0052,ChefPro Mixer Grinder,Home & Kitchen,Appliances,2144.25,3099.0,49,5,Rajkot Appliances Co.
+P0053,HomeNest Air Fryer,Home & Kitchen,Appliances,4269.32,5999.0,15,5,Delhi Home Supplies
+P0054,ChefPro Air Fryer,Home & Kitchen,Appliances,3333.27,4689.0,6,5,Rajkot Appliances Co.
+P0055,HomeNest Electric Kettle,Home & Kitchen,Appliances,612.1,999.0,109,5,Delhi Home Supplies
+P0056,ChefPro Electric Kettle,Home & Kitchen,Appliances,518.63,849.0,12,5,Rajkot Appliances Co.
+P0057,HomeNest Wall Clock,Home & Kitchen,Decor,307.52,699.0,9,5,Delhi Home Supplies
+P0058,ChefPro Wall Clock,Home & Kitchen,Decor,256.88,559.0,23,5,Rajkot Appliances Co.
+P0059,HomeNest Table Lamp,Home & Kitchen,Decor,671.12,1299.0,48,7,Delhi Home Supplies
+P0060,ChefPro Table Lamp,Home & Kitchen,Decor,581.82,1139.0,1,5,Rajkot Appliances Co.
+P0061,HomeNest Bedsheet Set,Home & Kitchen,Furnishing,547.28,1099.0,0,5,Delhi Home Supplies
+P0062,ChefPro Bedsheet Set,Home & Kitchen,Furnishing,482.53,989.0,1,5,Rajkot Appliances Co.
+P0063,HomeNest Curtains (Pair),Home & Kitchen,Furnishing,421.64,899.0,4,5,Delhi Home Supplies
+P0064,ChefPro Curtains (Pair),Home & Kitchen,Furnishing,368.79,799.0,12,5,Rajkot Appliances Co.
+P0065,Glow Face Wash,Beauty & Personal Care,Skincare,102.51,249.0,254,12,Herbal Care India
+P0066,PureVeda Face Wash,Beauty & Personal Care,Skincare,78.92,189.0,52,7,Glow Cosmetics Pvt Ltd
+P0067,Glow Sunscreen SPF 50,Beauty & Personal Care,Skincare,189.27,449.0,20,5,Herbal Care India
+P0068,PureVeda Sunscreen SPF 50,Beauty & Personal Care,Skincare,160.23,369.0,0,22,Glow Cosmetics Pvt Ltd
+P0069,Glow Moisturiser,Beauty & Personal Care,Skincare,159.39,399.0,73,9,Herbal Care India
+P0070,PureVeda Moisturiser,Beauty & Personal Care,Skincare,138.53,339.0,0,8,Glow Cosmetics Pvt Ltd
+P0071,Glow Shampoo,Beauty & Personal Care,Haircare,164.75,349.0,0,6,Herbal Care India
+P0072,PureVeda Shampoo,Beauty & Personal Care,Haircare,133.29,299.0,296,10,Glow Cosmetics Pvt Ltd
+P0073,Glow Hair Dryer,Beauty & Personal Care,Haircare,942.42,1499.0,0,5,Herbal Care India
+P0074,PureVeda Hair Dryer,Beauty & Personal Care,Haircare,701.68,1209.0,31,5,Glow Cosmetics Pvt Ltd
+P0075,Glow Beard Trimmer,Beauty & Personal Care,Grooming,756.52,1299.0,50,6,Herbal Care India
+P0076,PureVeda Beard Trimmer,Beauty & Personal Care,Grooming,597.23,1009.0,1,5,Glow Cosmetics Pvt Ltd
+P0077,Glow Perfume 100ml,Beauty & Personal Care,Fragrance,522.15,1199.0,0,5,Herbal Care India
+P0078,PureVeda Perfume 100ml,Beauty & Personal Care,Fragrance,459.27,979.0,60,5,Glow Cosmetics Pvt Ltd
+P0079,FitCore Yoga Mat,Sports & Fitness,Fitness Equipment,366.07,799.0,98,13,Jalandhar Sports Works
+P0080,ProPlay Yoga Mat,Sports & Fitness,Fitness Equipment,305.58,669.0,0,5,Meerut Sports Industries
+P0081,FitCore Dumbbell Set,Sports & Fitness,Fitness Equipment,1656.62,2499.0,17,5,Jalandhar Sports Works
+P0082,ProPlay Dumbbell Set,Sports & Fitness,Fitness Equipment,1416.28,2169.0,15,5,Meerut Sports Industries
+P0083,FitCore Resistance Bands,Sports & Fitness,Fitness Equipment,250.6,599.0,1,5,Jalandhar Sports Works
+P0084,ProPlay Resistance Bands,Sports & Fitness,Fitness Equipment,194.47,459.0,27,5,Meerut Sports Industries
+P0085,FitCore Cricket Bat,Sports & Fitness,Sports Gear,1128.44,1999.0,7,5,Jalandhar Sports Works
+P0086,ProPlay Cricket Bat,Sports & Fitness,Sports Gear,1004.82,1719.0,8,5,Meerut Sports Industries
+P0087,FitCore Football,Sports & Fitness,Sports Gear,414.31,799.0,2,5,Jalandhar Sports Works
+P0088,ProPlay Football,Sports & Fitness,Sports Gear,323.98,609.0,183,6,Meerut Sports Industries
+P0089,FitCore Badminton Racket,Sports & Fitness,Sports Gear,686.42,1299.0,115,5,Jalandhar Sports Works
+P0090,ProPlay Badminton Racket,Sports & Fitness,Sports Gear,670.67,1169.0,3,5,Meerut Sports Industries
+P0091,FitCore Whey Protein 1kg,Sports & Fitness,Nutrition,1485.73,2299.0,73,5,Jalandhar Sports Works
+P0092,ProPlay Whey Protein 1kg,Sports & Fitness,Nutrition,1313.85,1949.0,9,5,Meerut Sports Industries
+P0093,PageTurn Fiction Novel,Books & Stationery,Books,236.13,399.0,51,7,National Book Depot
+P0094,InkWell Fiction Novel,Books & Stationery,Books,187.71,329.0,57,6,Sivakasi Paper Mart
+P0095,PageTurn Competitive Exam Guide,Books & Stationery,Books,345.61,549.0,22,5,National Book Depot
+P0096,InkWell Competitive Exam Guide,Books & Stationery,Books,295.35,459.0,65,7,Sivakasi Paper Mart
+P0097,PageTurn Self-Help Book,Books & Stationery,Books,201.11,349.0,1,5,National Book Depot
+P0098,InkWell Self-Help Book,Books & Stationery,Books,183.23,309.0,18,5,Sivakasi Paper Mart
+P0099,PageTurn Notebook Pack (5),Books & Stationery,Stationery,109.41,249.0,2,5,National Book Depot
+P0100,InkWell Notebook Pack (5),Books & Stationery,Stationery,89.26,199.0,73,8,Sivakasi Paper Mart
+P0101,PageTurn Gel Pen Set,Books & Stationery,Stationery,57.24,149.0,167,7,National Book Depot
+P0102,InkWell Gel Pen Set,Books & Stationery,Stationery,45.46,119.0,32,5,Sivakasi Paper Mart
+P0103,PageTurn Art & Craft Kit,Books & Stationery,Stationery,344.6,699.0,1,5,National Book Depot
+P0104,InkWell Art & Craft Kit,Books & Stationery,Stationery,274.74,529.0,32,5,Sivakasi Paper Mart

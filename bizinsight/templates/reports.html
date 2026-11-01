@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% from "_macros.html" import filter_bar with context %}
+{% block title %}Reports{% endblock %}
+{% block heading %}Reports &amp; exports{% endblock %}
+{% block subheading %}Download any analysis as CSV or Excel, using the filters below{% endblock %}
+{% block content %}
+{{ filter_bar(f, options, 'reports.index') }}
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="card-x">
+      <h2>Data exports</h2>
+      <div class="card-sub">Every export respects the current date range, region and category</div>
+      <table class="table-x">
+        <tbody>
+        {% for key, label in reports.items() %}
+          <tr><td><strong>{{ label }}</strong>{% if key == 'inventory' %}<div class="small text-secondary">Current snapshot - only the category filter applies</div>{% endif %}</td>
+            <td class="num"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('reports.download', report=key, format='csv', **f.args()) }}"><i class="bi bi-filetype-csv"></i> CSV</a>
+              <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('reports.download', report=key, format='xlsx', **f.args()) }}"><i class="bi bi-file-earmark-excel"></i> Excel</a></td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card-x mb-3">
+      <h2>Complete analytics workbook</h2>
+      <div class="card-sub">All summary reports in one Excel file, one sheet each</div>
+      <a class="btn btn-primary" href="{{ url_for('reports.download', report='workbook', **f.args()) }}"><i class="bi bi-file-earmark-spreadsheet"></i> Download workbook</a>
+    </div>
+    <div class="card-x">
+      <h2>Executive summary</h2>
+      <div class="card-sub">A one-page management report with KPIs, top products, inventory status and insights. Use your browser's Print -> Save as PDF.</div>
+      <a class="btn btn-outline-primary" href="{{ url_for('reports.summary', **f.args()) }}"><i class="bi bi-printer"></i> Open summary</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

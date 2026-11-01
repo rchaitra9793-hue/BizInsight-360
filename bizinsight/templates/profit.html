@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% from "_macros.html" import filter_bar, tile with context %}
+{% block title %}Profit analysis{% endblock %}
+{% block heading %}Profit analysis{% endblock %}
+{% block subheading %}Margins, discount impact and where profit leaks{% endblock %}
+{% block content %}
+{{ filter_bar(f, options, 'profit.index') }}
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-4 col-xl-2">{{ tile('Gross profit', kpi.profit|inr, 'cash-stack', kpi.change.profit) }}</div>
+  <div class="col-6 col-md-4 col-xl-2">{{ tile('Profit margin', kpi.margin|pct, 'percent', kpi.change.margin, points=True) }}</div>
+  <div class="col-6 col-md-4 col-xl-2">{{ tile('Discounts given', bridge.discounts|inr, 'tag', note=(bridge.discount_pct|pct) ~ ' of gross sales') }}</div>
+  <div class="col-6 col-md-4 col-xl-2">{{ tile('Avg discount', kpi.avg_discount|pct, 'percent', note='per order line') }}</div>
+  <div class="col-6 col-md-4 col-xl-2">{{ tile('Loss on unprofitable lines', loss_lines.loss|inr, 'graph-down-arrow', note=(loss_lines.lines|num) ~ ' lines sold below cost') }}</div>
+  <div class="col-6 col-md-4 col-xl-2">{{ tile('Discount vs margin', ('r = %.2f'|format(correlation.r)) if correlation else '-', 'activity', note=(correlation.strength ~ ' ' ~ correlation.direction ~ ' correlation') if correlation else 'not enough data') }}</div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-6">
+    <div class="card-x">
+      <h2>Profit bridge</h2>
+      <div class="card-sub">From list-price sales to gross profit</div>
+      <div class="chart-box"><canvas id="bridgeChart"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card-x">
+      <h2>Profit margin trend</h2>
+      <div class="card-sub">Monthly gross margin</div>
+      <div class="chart-box"><canvas id="marginChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-6">
+    <div class="card-x">
+      <h2>Margin by discount level</h2>
+      <div class="card-sub">Deeper discounts shrink margin; bars below zero lose money</div>
+      <div class="chart-box short"><canvas id="bandChart"></canvas></div>
+      <table class="table-x mt-2">
+        <thead><tr><th>Discount</th><th class="num">Lines</th><th class="num">Revenue</th><th class="num">Profit</th><th class="num">Margin</th></tr></thead>
+        <tbody>{% for b in bands %}<tr><td>{{ b.band }}</td><td class="num">{{ b.lines|num }}</td><td class="num">{{ b.revenue|inr }}</td>
+          <td class="num {{ 'neg' if b.profit < 0 }}">{{ b.profit|inr }}</td><td class="num {{ 'neg' if b.margin < 0 }}">{{ b.margin|pct }}</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card-x">
+      <h2>Margin heatmap: category x discount</h2>
+      <div class="card-sub">Red cells lose money, blue cells earn it, grey is break-even</div>
+      <div class="table-wrap"><table class="table-x heat">
+        <thead><tr><th>Category</th>{% for b in matrix.bands %}<th class="num">{{ b }}</th>{% endfor %}</tr></thead>
+        <tbody>
+        {% for row in matrix.rows %}
+          <tr><td>{{ row.category }}</td>
+          {% for v in row.cells %}
+            <td class="cell" data-margin="{{ v if v is not none else '' }}">{{ v|pct(0) if v is not none else '-' }}</td>
+          {% endfor %}</tr>
+        {% endfor %}
+        </tbody></table></div>
+      <div class="d-flex align-items-center gap-2 small text-secondary mt-2">
+        <span>-40%</span><span style="flex:1;height:8px;border-radius:4px;background:linear-gradient(90deg,var(--div-neg),var(--div-mid),var(--div-pos))"></span><span>+40%</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-5">
+    <div class="card-x">
+      <h2>Category profitability</h2>
+      <div class="card-sub">Profit margin by category</div>
+      <div class="chart-box short"><canvas id="catChart"></canvas></div>
+      <table class="table-x mt-2">
+        <thead><tr><th>Category</th><th class="num">Revenue</th><th class="num">Profit</th><th class="num">Margin</th><th class="num">Avg disc.</th></tr></thead>
+        <tbody>{% for c in categories %}<tr><td>{{ c.label }}</td><td class="num">{{ c.revenue|inr }}</td><td class="num">{{ c.profit|inr }}</td><td class="num">{{ c.margin|pct }}</td><td class="num">{{ c.avg_discount|pct }}</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card-x">
+      <h2>Profit by sub-category</h2>
+      <div class="card-sub">Lowest to highest gross profit</div>
+      <div class="chart-box tall"><canvas id="subChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="card-x">
+      <h2>Region profitability</h2><div class="card-sub">Margin by region</div>
+      <table class="table-x">
+        <thead><tr><th>Region</th><th class="num">Profit</th><th class="num">Margin</th></tr></thead>
+        <tbody>{% for r in regions %}<tr><td>{{ r.label }}</td><td class="num">{{ r.profit|inr }}</td><td class="num">{{ r.margin|pct }}</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="card-x">
+      <h2>Loss-making products</h2>
+      <div class="card-sub">Products whose total profit in the period is negative</div>
+      {% if losers %}
+      <div class="table-wrap"><table class="table-x">
+        <thead><tr><th>Product</th><th>Category</th><th class="num">Units</th><th class="num">Revenue</th><th class="num">Profit</th><th class="num">Margin</th><th class="num">Avg discount</th></tr></thead>
+        <tbody>{% for p in losers %}<tr><td><a href="{{ url_for('products.detail', product_id=p.product_id, **f.args()) }}">{{ p.product_name }}</a></td><td>{{ p.category }}</td>
+          <td class="num">{{ p.units|num }}</td><td class="num">{{ p.revenue|inr }}</td><td class="num neg">{{ p.profit|inr }}</td><td class="num neg">{{ p.margin|pct }}</td><td class="num">{{ p.avg_discount|pct }}</td></tr>{% endfor %}</tbody>
+      </table></div>
+      {% else %}<div class="empty"><i class="bi bi-emoji-smile fs-3"></i><p class="mt-2 mb-0">Every product made a profit in this period.</p></div>{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const b = {{ bridge|tojson }};
+  BIZ.bar("bridgeChart", ["Gross sales", "Discounts", "Net revenue", "Cost of goods", "Gross profit"],
+    [[0, b.gross], [b.net, b.gross], [0, b.net], [b.profit, b.net], [0, b.profit]], "inr",
+    { label: "Amount", colorFn: (v, i) => [1, 3].includes(i) ? BIZ.css("series-2") : BIZ.css("series-1") });
+
+  const trend = {{ trend|tojson }};
+  BIZ.line("marginChart", trend.map(r => r.period), [{ label: "Margin", data: trend.map(r => r.margin), fill: true }], "pct");
+
+  const posNeg = (v) => (v < 0 ? BIZ.css("div-neg") : BIZ.css("div-pos"));
+  const bands = {{ bands|tojson }};
+  BIZ.bar("bandChart", bands.map(x => x.band), bands.map(x => x.margin), "pct", { label: "Margin", colorFn: posNeg });
+  const cats = {{ categories|tojson }};
+  BIZ.bar("catChart", cats.map(c => c.label), cats.map(c => c.margin), "pct", { horizontal: true, label: "Margin" });
+  const subs = {{ sub_categories|tojson }};
+  BIZ.bar("subChart", subs.map(c => c.label), subs.map(c => c.profit), "inr", { horizontal: true, label: "Profit", colorFn: posNeg });
+
+  // Diverging colour scale for the heatmap: red (loss) -> grey (0) -> blue (profit)
+  function paintHeat() {
+    const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+    const mix = (a, b, t) => "rgb(" + a.map((x, i) => Math.round(x + (b[i] - x) * t)).join(",") + ")";
+    const neg = hex(BIZ.css("div-neg")), mid = hex(BIZ.css("div-mid")), pos = hex(BIZ.css("div-pos"));
+    document.querySelectorAll(".heat td.cell").forEach((td) => {
+      if (td.dataset.margin === "") return;
+      const m = Math.max(-0.4, Math.min(0.4, parseFloat(td.dataset.margin)));
+      const t = Math.abs(m) / 0.4;
+      td.style.background = mix(mid, m < 0 ? neg : pos, t);
+      td.style.color = t > 0.55 ? "#fff" : "";
+    });
+  }
+  paintHeat();
+  document.querySelector("[aria-label='Toggle dark mode']").addEventListener("click", () => setTimeout(paintHeat, 0));
+</script>
+{% endblock %}

@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% from "_macros.html" import tile, stock_badge, restock_form %}
+{% block title %}Inventory{% endblock %}
+{% block heading %}Inventory analytics{% endblock %}
+{% block subheading %}Stock health measured against the last {{ config.DEMAND_WINDOW_DAYS }} days of demand (as of {{ summary.as_of }}){% endblock %}
+{% block content %}
+<form class="filter-bar" method="get">
+  <div><label for="cat">Category</label><select id="cat" name="category" class="form-select form-select-sm">
+    <option value="">All categories</option>{% for c in options.categories %}<option {{ 'selected' if c == category }}>{{ c }}</option>{% endfor %}</select></div>
+  <div><label for="st">Status</label><select id="st" name="status" class="form-select form-select-sm">
+    <option value="">All statuses</option>{% for s in statuses %}<option {{ 'selected' if s == status }}>{{ s }}</option>{% endfor %}</select></div>
+  <div><label for="q">Search</label><input id="q" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Name or ID"></div>
+  <div><button class="btn btn-sm btn-primary"><i class="bi bi-funnel"></i> Apply</button></div>
+  <div><a class="btn btn-sm btn-link" href="{{ url_for('inventory.index') }}">Reset</a></div>
+</form>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-4 col-xl-2">{{ tile('Stock value (cost)', summary.stock_value|inr, 'boxes', note=(summary.units|num) ~ ' units on hand') }}</div>
+  <div class="col-6 col-md-4 col-xl-2">{{ tile('Retail value', summary.retail_value|inr, 'tags', note='at list price') }}</div>
+  <div class="col-6 col-md-4 col-xl-2">{{ tile('Inventory turnover', ('%.1fx'|format(summary.turnover)) if summary.turnover else '-', 'arrow-repeat', note='annual COGS / stock value') }}</div>
+  <div class="col-6 col-md-4 col-xl-2">{{ tile('Days of inventory', (summary.days_of_inventory|round|int) if summary.days_of_inventory else '-', 'calendar-range', note='days current stock will last') }}</div>
+  <div class="col-6 col-md-4 col-xl-2">{{ tile('Items to reorder', summary.reorder_items, 'cart-plus', note='suggested PO ' ~ (summary.reorder_cost|inr)) }}</div>
+  <div class="col-6 col-md-4 col-xl-2">{{ tile('Dead stock value', summary.status_values['Dead Stock']|inr, 'hourglass-split', note=(summary.status_counts['Dead Stock']) ~ ' items not selling') }}</div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-5">
+    <div class="card-x">
+      <h2>Stock status</h2>
+      <div class="card-sub">Click a status to filter the stock table</div>
+      {% for s in statuses %}
+        <a class="d-flex align-items-center gap-3 py-2 border-bottom text-reset" href="{{ url_for('inventory.index', status=s, category=category) }}">
+          <span style="width:120px">{{ stock_badge(s) }}</span>
+          <span class="flex-grow-1"><div class="sharebar"><span style="width: {{ (summary.status_counts[s] / summary.products * 100) if summary.products else 0 }}%"></span></div></span>
+          <span class="text-end" style="width:50px"><strong>{{ summary.status_counts[s] }}</strong></span>
+          <span class="text-end text-secondary small" style="width:80px">{{ summary.status_values[s]|inr }}</span>
+        </a>
+      {% endfor %}
+      <p class="small text-secondary mt-2 mb-0">Rules: <strong>Low</strong> = at or below reorder point (demand x {{ config.LEAD_TIME_DAYS + config.SAFETY_STOCK_DAYS }} days, min. reorder level) ·
+        <strong>Dead</strong> = no sales in {{ config.DEMAND_WINDOW_DAYS }} days · <strong>Overstock</strong> = more than {{ config.OVERSTOCK_DAYS }} days of cover.</p>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card-x">
+      <h2>Stock value by category</h2><div class="card-sub">Capital tied up in inventory, at cost</div>
+      <div class="chart-box short"><canvas id="catStock"></canvas></div>
+      <table class="table-x mt-2">
+        <thead><tr><th>Category</th><th class="num">Stock value</th><th class="num">Units</th><th class="num">Turnover</th><th class="num">Items at risk</th></tr></thead>
+        <tbody>{% for c in categories %}<tr><td>{{ c.label }}</td><td class="num">{{ c.stock_value|inr }}</td><td class="num">{{ c.units|num }}</td>
+          <td class="num">{{ ('%.1fx'|format(c.turnover)) if c.turnover else '-' }}</td><td class="num">{{ c.at_risk }}</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-xxl-8">
+    <div class="card-x">
+      <h2>Reorder suggestions</h2>
+      <div class="card-sub">Order quantity covers lead time ({{ config.LEAD_TIME_DAYS }}d) + safety ({{ config.SAFETY_STOCK_DAYS }}d) + review period ({{ config.REVIEW_PERIOD_DAYS }}d) of average demand</div>
+      {% if reorder %}
+      <div class="table-wrap table-scroll" style="max-height:380px"><table class="table-x">
+        <thead><tr><th>Product</th><th>Status</th><th class="num">Stock</th><th class="num">Daily demand</th><th class="num">Order qty</th><th class="num">Cost</th>{% if g.user.role == 'admin' %}<th class="num">Receive</th>{% endif %}</tr></thead>
+        <tbody>{% for r in reorder %}<tr><td><a href="{{ url_for('products.detail', product_id=r.product_id) }}">{{ r.name }}</a><div class="small text-secondary">{{ r.supplier or '' }}</div></td>
+          <td>{{ stock_badge(r.status) }}</td><td class="num">{{ r.stock_qty }}</td><td class="num">{{ '%.1f'|format(r.avg_daily) }}</td>
+          <td class="num fw-semibold">{{ r.suggested_order|num }}</td><td class="num">{{ r.order_cost|inr }}</td>
+          {% if g.user.role == 'admin' %}<td>{{ restock_form(r, r.suggested_order) }}</td>{% endif %}</tr>{% endfor %}</tbody>
+      </table></div>
+      {% else %}<div class="empty">Nothing needs reordering right now.</div>{% endif %}
+    </div>
+  </div>
+  <div class="col-xxl-4">
+    <div class="card-x">
+      <h2>Dead stock</h2><div class="card-sub">In stock but not sold in {{ config.DEMAND_WINDOW_DAYS }} days</div>
+      {% if dead %}
+      <table class="table-x">
+        <thead><tr><th>Product</th><th class="num">Units</th><th class="num">Value</th><th class="num">Last sold</th></tr></thead>
+        <tbody>{% for r in dead %}<tr><td>{{ r.name }}</td><td class="num">{{ r.stock_qty }}</td><td class="num">{{ r.stock_value|inr }}</td>
+          <td class="num">{{ ('%d days ago'|format(r.days_since_sale)) if r.days_since_sale is not none else 'never' }}</td></tr>{% endfor %}</tbody>
+      </table>
+      {% else %}<div class="empty">No dead stock.</div>{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="card-x mb-3">
+  <h2>Stock table</h2>
+  <div class="card-sub">{{ rows|length }} products{% if status %} with status "{{ status }}"{% endif %}. Sorted by urgency.</div>
+  <div class="table-wrap table-scroll"><table class="table-x">
+    <thead><tr><th>Product</th><th>Status</th><th class="num">Stock</th><th class="num">Reorder point</th><th class="num">Daily demand</th>
+      <th class="num">Days cover</th><th class="num">Value</th><th class="num">Turnover</th>{% if g.user.role == 'admin' %}<th class="num">Add stock</th>{% endif %}</tr></thead>
+    <tbody>{% for r in rows %}<tr>
+      <td><a href="{{ url_for('products.detail', product_id=r.product_id) }}">{{ r.name }}</a><div class="small text-secondary">{{ r.product_id }} · {{ r.category }}</div></td>
+      <td>{{ stock_badge(r.status) }}</td><td class="num">{{ r.stock_qty|num }}</td><td class="num">{{ r.reorder_point }}</td>
+      <td class="num">{{ '%.2f'|format(r.avg_daily) }}</td><td class="num">{{ (r.days_cover|round|int) if r.days_cover is not none else '-' }}</td>
+      <td class="num">{{ r.stock_value|inr }}</td><td class="num">{{ ('%.1fx'|format(r.turnover)) if r.turnover else '-' }}</td>
+      {% if g.user.role == 'admin' %}<td>{{ restock_form(r, none) }}</td>{% endif %}</tr>{% endfor %}</tbody>
+  </table></div>
+</div>
+
+<div class="card-x">
+  <h2>Recent stock movements</h2><div class="card-sub">Restocks, sales recorded in the app, returns and corrections</div>
+  {% if movements %}
+  <table class="table-x"><thead><tr><th>When</th><th>Product</th><th class="num">Change</th><th>Reason</th><th>By</th></tr></thead>
+    <tbody>{% for m in movements %}<tr><td>{{ m.created_at }}</td><td>{{ m.name }}</td><td class="num {{ 'pos' if m.change_qty > 0 else 'neg' }}">{{ '%+d'|format(m.change_qty) }}</td><td>{{ m.reason }}</td><td>{{ m.user_name or '-' }}</td></tr>{% endfor %}</tbody></table>
+  {% else %}<div class="empty">No stock movements yet. Restock an item or record an order to see them here.</div>{% endif %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  const cats = {{ categories|tojson }};
+  BIZ.bar("catStock", cats.map(c => c.label), cats.map(c => c.stock_value), "inr", { horizontal: true, label: "Stock value" });
+</script>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% from "_macros.html" import filter_bar, tile, insight_card, order_badge, sharebar with context %}
+{% block title %}Overview{% endblock %}
+{% block heading %}Business overview{% endblock %}
+{% block subheading %}Sales, profit, inventory and customers at a glance{% endblock %}
+{% block actions %}
+  <a class="btn btn-sm btn-outline-secondary d-none d-md-inline-block" href="{{ url_for('reports.summary', **f.args()) }}"><i class="bi bi-printer"></i> Executive summary</a>
+{% endblock %}
+{% block content %}
+{{ filter_bar(f, options, 'dashboard.index') }}
+
+{% if not kpi.orders %}
+  <div class="card-x empty"><i class="bi bi-inbox fs-2"></i><p class="mt-2">No sales match these filters.</p>
+    <a href="{{ url_for('dashboard.index') }}">Clear filters</a> or <a href="{{ url_for('data.index') }}">import data</a>.</div>
+{% else %}
+<div class="row g-3 mb-3">
+  <div class="col-12 col-xl-4">{{ tile('Net revenue', kpi.revenue|inr, 'currency-rupee', kpi.change.revenue, hero=True) }}</div>
+  <div class="col-6 col-md-4 col-xl-2">{{ tile('Gross profit', kpi.profit|inr, 'cash-stack', kpi.change.profit) }}</div>
+  <div class="col-6 col-md-4 col-xl-2">{{ tile('Profit margin', kpi.margin|pct, 'percent', kpi.change.margin, points=True) }}</div>
+  <div class="col-6 col-md-4 col-xl-2">{{ tile('Orders', kpi.orders|num, 'bag-check', kpi.change.orders) }}</div>
+  <div class="col-6 col-md-4 col-xl-2">{{ tile('Avg order value', kpi.aov|inr, 'receipt', kpi.change.aov) }}</div>
+  <div class="col-6 col-md-4 col-xl-3">{{ tile('Customers', kpi.customers|num, 'people', kpi.change.customers) }}</div>
+  <div class="col-6 col-md-4 col-xl-3">{{ tile('Units sold', kpi.units|num, 'box', kpi.change.units) }}</div>
+  <div class="col-6 col-md-4 col-xl-3">{{ tile('Return rate', kpi.return_rate|pct, 'arrow-return-left', kpi.change.return_rate, points=True, invert=True) }}</div>
+  <div class="col-6 col-md-4 col-xl-3">{{ tile('Stock value', inventory.stock_value|inr, 'boxes', note=(inventory.status_counts['Out of Stock'] ~ ' out of stock · ' ~ inventory.status_counts['Low Stock'] ~ ' low')) }}</div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-8">
+    <div class="card-x">
+      <h2>Revenue and profit trend</h2>
+      <div class="card-sub">Net revenue and gross profit per {{ 'day' if f.days <= 62 else 'week' if f.days <= 200 else 'month' }}</div>
+      <div class="chart-box tall"><canvas id="trendChart" aria-label="Revenue and profit trend"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card-x">
+      <h2>Revenue by category</h2>
+      <div class="card-sub">Share of net revenue</div>
+      <div class="chart-box tall"><canvas id="catChart" aria-label="Revenue by category"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-4">
+    <div class="card-x">
+      <h2>Revenue by region</h2>
+      <div class="card-sub">Where customers are buying</div>
+      <div class="chart-box"><canvas id="regionChart" aria-label="Revenue by region"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card-x">
+      <div class="d-flex justify-content-between"><h2>Top 5 products</h2><a class="small" href="{{ url_for('products.index', **f.args()) }}">All products</a></div>
+      <div class="card-sub">By net revenue</div>
+      <table class="table-x">
+        <thead><tr><th>Product</th><th class="num">Revenue</th><th class="num">Margin</th><th>Share</th></tr></thead>
+        <tbody>
+        {% for p in top_products %}
+          <tr><td><a href="{{ url_for('products.detail', product_id=p.product_id, **f.args()) }}">{{ p.product_name }}</a>
+            <div class="small text-secondary">{{ p.category }} · {{ p.units|num }} units</div></td>
+            <td class="num">{{ p.revenue|inr }}</td><td class="num {{ 'neg' if p.margin < 0 }}">{{ p.margin|pct }}</td>
+            <td style="width:90px">{{ sharebar(p.share / top_products[0].share) }}<div class="small text-secondary">{{ p.share|pct }}</div></td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col-lg-3">
+    <div class="card-x">
+      <div class="d-flex justify-content-between"><h2>Inventory health</h2><a class="small" href="{{ url_for('inventory.index') }}">Details</a></div>
+      <div class="card-sub">As of {{ inventory.as_of }}</div>
+      {% set classes = {'Out of Stock':'critical','Low Stock':'serious','Dead Stock':'warning','Overstock':'info','Healthy':'good'} %}
+      {% for status, count in inventory.status_counts.items() %}
+        <a class="d-flex justify-content-between align-items-center py-2 border-bottom text-reset" href="{{ url_for('inventory.index', status=status) }}">
+          <span class="badge-x s-{{ classes[status] }}"><span class="dot"></span>{{ status }}</span>
+          <span class="fw-semibold">{{ count }}</span></a>
+      {% endfor %}
+      <div class="small text-secondary mt-2">Suggested reorder: <strong>{{ inventory.reorder_cost|inr }}</strong> across {{ inventory.reorder_items }} items</div>
+    </div>
+  </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-2">
+  <h2 class="h6 mb-0">Key insights</h2>
+  <a class="small" href="{{ url_for('dashboard.insights', **f.args()) }}">All insights <i class="bi bi-chevron-right"></i></a>
+</div>
+<div class="row g-3 mb-3">
+  {% for i in insights %}<div class="col-md-6 col-xl-4">{{ insight_card(i) }}</div>{% endfor %}
+</div>
+
+<div class="card-x">
+  <div class="d-flex justify-content-between"><h2>Recent orders</h2><a class="small" href="{{ url_for('data.orders') }}">All orders</a></div>
+  <div class="table-wrap mt-2"><table class="table-x">
+    <thead><tr><th>Order</th><th>Date</th><th>Customer</th><th class="num">Items</th><th class="num">Value</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for o in recent %}
+      <tr><td><a href="{{ url_for('data.order_detail', order_id=o.order_id) }}">{{ o.order_id }}</a></td><td>{{ o.order_date }}</td>
+        <td>{{ o.customer_name }}</td><td class="num">{{ o.item_count }}</td><td class="num">{{ o.value|inr_full }}</td><td>{{ order_badge(o.status) }}</td></tr>
+    {% endfor %}
+    </tbody></table></div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if kpi.orders %}
+<script>
+  const trend = {{ trend|tojson }};
+  BIZ.line("trendChart", trend.map(r => r.period), [
+    { label: "Revenue", data: trend.map(r => r.revenue), color: "series-1", fill: true },
+    { label: "Profit", data: trend.map(r => r.profit), color: "series-2" },
+  ], "inr");
+  const cats = {{ categories|tojson }};
+  BIZ.bar("catChart", cats.map(c => c.label), cats.map(c => c.revenue), "inr", { horizontal: true, label: "Revenue" });
+  const regions = {{ regions|tojson }};
+  BIZ.bar("regionChart", regions.map(r => r.label), regions.map(r => r.revenue), "inr", { label: "Revenue" });
+</script>
+{% endif %}
+{% endblock %}

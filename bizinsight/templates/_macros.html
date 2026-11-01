@@ -1,0 +1,83 @@
+{# Reusable UI pieces #}
+
+{% macro filter_bar(f, options, endpoint, extra={}) -%}
+<form class="filter-bar" method="get" action="{{ url_for(endpoint) }}">
+  {% for k, v in extra.items() %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+  <div><label for="fStart">From</label><input id="fStart" type="date" name="start" value="{{ f.start }}" class="form-control form-control-sm"></div>
+  <div><label for="fEnd">To</label><input id="fEnd" type="date" name="end" value="{{ f.end }}" class="form-control form-control-sm"></div>
+  <div><label for="fRegion">Region</label>
+    <select id="fRegion" name="region" class="form-select form-select-sm">
+      <option value="">All regions</option>
+      {% for r in options.regions %}<option {{ 'selected' if r == f.region }}>{{ r }}</option>{% endfor %}
+    </select></div>
+  <div><label for="fCat">Category</label>
+    <select id="fCat" name="category" class="form-select form-select-sm">
+      <option value="">All categories</option>
+      {% for c in options.categories %}<option {{ 'selected' if c == f.category }}>{{ c }}</option>{% endfor %}
+    </select></div>
+  <div><button class="btn btn-sm btn-primary"><i class="bi bi-funnel"></i> Apply</button></div>
+  <div class="presets btn-group btn-group-sm ms-lg-auto" role="group" aria-label="Quick periods">
+    {% for key, label in [('30d','30D'),('90d','90D'),('ytd','YTD'),('12m','12M'),('all','All')] %}
+      <a class="btn btn-outline-secondary" href="{{ url_for(endpoint, period=key, region=f.region, category=f.category, **extra) }}">{{ label }}</a>
+    {% endfor %}
+  </div>
+  <div class="w-100 filter-label"><i class="bi bi-calendar3"></i> {{ f.label }} · {{ f.days }} days
+    {% if f.region %} · {{ f.region }}{% endif %}{% if f.category %} · {{ f.category }}{% endif %}
+    · revenue excludes cancelled &amp; returned orders</div>
+</form>
+{%- endmacro %}
+
+{% macro delta(value, points=False, invert=False) -%}
+  {% if value is none %}<span class="delta">no prior data</span>
+  {% else %}
+    {% set good = (value < 0) if invert else (value >= 0) %}
+    <span class="{{ 'delta-up' if good else 'delta-down' }}">
+      <i class="bi bi-arrow-{{ 'up' if value >= 0 else 'down' }}-short"></i>{% if points %}{{ '%+.1f'|format(value * 100) }} pts{% else %}{{ '%+.1f'|format(value * 100) }}%{% endif %}</span>
+    <span class="delta">vs previous period</span>
+  {% endif %}
+{%- endmacro %}
+
+{% macro tile(label, value, icon, change=none, points=False, invert=False, note=none, hero=False) -%}
+<div class="kpi {{ 'hero' if hero }}">
+  <div class="label"><i class="bi bi-{{ icon }}"></i>{{ label }}</div>
+  <div class="value">{{ value }}</div>
+  <div class="delta">{% if note %}{{ note }}{% else %}{{ delta(change, points, invert) }}{% endif %}</div>
+</div>
+{%- endmacro %}
+
+{% macro stock_badge(status) -%}
+  {% set cls = {'Out of Stock':'critical','Low Stock':'serious','Dead Stock':'warning','Overstock':'info','Healthy':'good'}[status] %}
+  <span class="badge-x s-{{ cls }}"><span class="dot"></span>{{ status }}</span>
+{%- endmacro %}
+
+{% macro order_badge(status) -%}
+  {% set cls = {'Delivered':'good','Shipped':'info','Cancelled':'muted','Returned':'serious'}[status] %}
+  <span class="badge-x s-{{ cls }}"><span class="dot"></span>{{ status }}</span>
+{%- endmacro %}
+
+{% macro sharebar(share) -%}
+<div class="sharebar" title="{{ share|pct }}"><span style="width: {{ (share * 100)|round(1) }}%"></span></div>
+{%- endmacro %}
+
+{% macro insight_card(i) -%}
+{% set icons = {'positive':'graph-up-arrow','negative':'exclamation-octagon','warning':'exclamation-triangle','info':'info-lg'} %}
+<div class="insight {{ i.level }}">
+  <div class="icon"><i class="bi bi-{{ icons[i.level] }}"></i></div>
+  <div>
+    <div class="area">{{ i.area }}</div>
+    <div class="title">{{ i.title }}</div>
+    <div class="text">{{ i.text }}</div>
+    {% if i.action %}<div class="action"><i class="bi bi-arrow-right-circle"></i> {{ i.action }}</div>{% endif %}
+    {% if i.link %}<a class="small" href="{{ url_for(i.link, **f.args()) }}">Explore <i class="bi bi-chevron-right"></i></a>{% endif %}
+  </div>
+</div>
+{%- endmacro %}
+
+{% macro restock_form(r, qty) -%}
+<form method="post" action="{{ url_for('inventory.adjust', product_id=r.product_id) }}" class="d-flex gap-1 justify-content-end">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}"><input type="hidden" name="mode" value="restock">
+  <input type="hidden" name="reason" value="Purchase order received">
+  <input type="number" name="qty" min="1" value="{{ qty or '' }}" class="form-control form-control-sm" style="width:80px" aria-label="Quantity" required>
+  <button class="btn btn-sm btn-outline-primary" title="Add stock"><i class="bi bi-plus-lg"></i></button>
+</form>
+{%- endmacro %}

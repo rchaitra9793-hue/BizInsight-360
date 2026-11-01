@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% from "_macros.html" import filter_bar, sharebar with context %}
+{% block title %}Product analysis{% endblock %}
+{% block heading %}Product analysis{% endblock %}
+{% block subheading %}Best sellers, ABC classification and the long tail{% endblock %}
+{% block content %}
+{{ filter_bar(f, options, 'products.index') }}
+
+{% if not rows %}<div class="card-x empty">No product sales match these filters.</div>{% else %}
+<div class="row g-3 mb-3">
+  {% for a in abc %}
+  <div class="col-md-4">
+    <div class="kpi">
+      <div class="label"><span class="abc abc-{{ a.cls }}">{{ a.cls }}</span> Class {{ a.cls }} products</div>
+      <div class="value">{{ a.products }} <span class="fs-6 fw-normal text-secondary">products ({{ a.product_share|pct(0) }})</span></div>
+      <div class="delta"><strong>{{ a.revenue_share|pct }}</strong> of revenue ({{ a.revenue|inr }}) · {{ a.note }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-6">
+    <div class="card-x">
+      <h2>Pareto curve</h2>
+      <div class="card-sub">Cumulative share of revenue as products are added from best to worst seller. The marker shows where 80% is reached.</div>
+      <div class="chart-box"><canvas id="paretoChart"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card-x">
+      <div class="d-flex justify-content-between flex-wrap gap-2">
+        <div><h2>Top 10 products</h2><div class="card-sub">Ranked by the selected measure</div></div>
+        <div class="btn-group btn-group-sm" role="group">
+          <button class="btn btn-outline-secondary active" data-top="revenue">Revenue</button>
+          <button class="btn btn-outline-secondary" data-top="profit">Profit</button>
+        </div>
+      </div>
+      <div class="chart-box"><canvas id="topChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<div class="card-x mb-3">
+  <div class="d-flex justify-content-between flex-wrap gap-2 mb-2">
+    <div><h2>All products</h2><div class="card-sub mb-0">{{ rows|length }} products sold in this period. Click a product for its detail page.</div></div>
+    <input class="form-control form-control-sm" style="max-width:260px" placeholder="Search products..." data-table-filter="#productTable">
+  </div>
+  <div class="table-wrap table-scroll"><table class="table-x" id="productTable">
+    <thead><tr><th>#</th><th>ABC</th><th>Product</th><th>Category</th><th class="num">Units</th><th class="num">Revenue</th><th class="num">Profit</th>
+      <th class="num">Margin</th><th class="num">Avg disc.</th><th class="num">Return rate</th><th class="num">Stock</th><th class="num">Cum. share</th></tr></thead>
+    <tbody>
+    {% for p in rows %}
+      <tr><td class="text-secondary">{{ p.rank }}</td><td><span class="abc abc-{{ p.abc }}">{{ p.abc }}</span></td>
+        <td><a href="{{ url_for('products.detail', product_id=p.product_id, **f.args()) }}">{{ p.product_name }}</a><div class="small text-secondary">{{ p.product_id }}</div></td>
+        <td>{{ p.category }}<div class="small text-secondary">{{ p.sub_category }}</div></td>
+        <td class="num">{{ p.units|num }}</td><td class="num">{{ p.revenue|inr }}</td><td class="num {{ 'neg' if p.profit < 0 }}">{{ p.profit|inr }}</td>
+        <td class="num {{ 'neg' if p.margin < 0 }}">{{ p.margin|pct }}</td><td class="num">{{ p.avg_discount|pct }}</td>
+        <td class="num">{{ p.return_rate|pct }}</td><td class="num {{ 'neg' if p.stock_qty == 0 }}">{{ p.stock_qty|num }}</td><td class="num">{{ p.cum_share|pct }}</td></tr>
+    {% endfor %}
+    </tbody></table></div>
+</div>
+{% endif %}
+
+{% if unsold %}
+<div class="card-x">
+  <h2>Products with no sales in this period</h2>
+  <div class="card-sub">{{ unsold|length }} catalogue items - check pricing, visibility or consider delisting</div>
+  <div class="table-wrap"><table class="table-x">
+    <thead><tr><th>Product</th><th>Category</th><th class="num">Price</th><th class="num">Stock on hand</th></tr></thead>
+    <tbody>{% for p in unsold %}<tr><td><a href="{{ url_for('products.detail', product_id=p.product_id) }}">{{ p.name }}</a></td><td>{{ p.category }}</td>
+      <td class="num">{{ p.unit_price|inr_full }}</td><td class="num">{{ p.stock_qty|num }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if rows %}
+<script>
+  const rows = {{ rows|tojson }};
+  const cut = rows.findIndex(r => r.cum_share >= 0.8);
+  // The marker on the line shows where 80% of revenue is reached
+  BIZ.line("paretoChart", rows.map(r => r.rank), [{ label: "Cumulative revenue share", data: rows.map(r => r.cum_share), fill: true,
+      extra: { pointRadius: rows.map((_, i) => (i === cut ? 5 : 0)) } }], "pct", {
+    valueAxis: { min: 0, max: 1 },
+    catAxis: { title: { display: true, text: "Products ranked by revenue" }, ticks: { maxTicksLimit: 10 } },
+  });
+
+  const byProfit = {{ by_profit|tojson }};
+  const name = (s) => (s.length > 26 ? s.slice(0, 25) + "…" : s);
+  function drawTop(metric) {
+    const data = metric === "profit" ? byProfit : rows.slice(0, 10);
+    BIZ.bar("topChart", data.map(r => name(r.product_name)), data.map(r => r[metric]), "inr",
+      { horizontal: true, label: metric === "profit" ? "Profit" : "Revenue" });
+  }
+  drawTop("revenue");
+  document.querySelectorAll("[data-top]").forEach((btn) => btn.addEventListener("click", () => {
+    document.querySelectorAll("[data-top]").forEach(b => b.classList.toggle("active", b === btn));
+    drawTop(btn.dataset.top);
+  }));
+</script>
+{% endif %}
+{% endblock %}

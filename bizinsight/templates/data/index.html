@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Data import{% endblock %}
+{% block heading %}Data management{% endblock %}
+{% block subheading %}Import your own sales and product data, or reset to the sample dataset{% endblock %}
+{% block content %}
+<div class="row g-3 mb-3">
+  {% for label, value, icon in [('Orders', counts.orders, 'receipt'), ('Order lines', counts.lines, 'list-ul'), ('Customers', counts.customers, 'people'), ('Products', counts.products, 'box-seam')] %}
+  <div class="col-6 col-lg-3"><div class="kpi"><div class="label"><i class="bi bi-{{ icon }}"></i>{{ label }}</div><div class="value">{{ value|num }}</div>
+    <div class="delta">{% if loop.first and counts.first %}{{ counts.first }} to {{ counts.last }}{% else %}&nbsp;{% endif %}</div></div></div>
+  {% endfor %}
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-7">
+    <div class="card-x">
+      <h2>Import CSV</h2>
+      <div class="card-sub">Rows are validated one by one. Valid rows are imported; invalid rows are reported with the reason. Re-importing the same order line updates it (no duplicates).</div>
+      {% if g.user.role == 'admin' %}
+      <form method="post" action="{{ url_for('data.upload') }}" enctype="multipart/form-data">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <div class="mb-2">
+          <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="kind" id="kSales" value="sales" checked><label class="form-check-label" for="kSales">Sales transactions</label></div>
+          <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="kind" id="kProd" value="products"><label class="form-check-label" for="kProd">Product catalogue &amp; stock</label></div>
+        </div>
+        <div class="input-group mb-2">
+          <input type="file" class="form-control" name="file" accept=".csv" required>
+          <button class="btn btn-primary"><i class="bi bi-upload"></i> Import</button>
+        </div>
+      </form>
+      {% else %}
+      <div class="alert alert-info py-2 small mb-2">Analyst accounts are read-only. Ask an administrator to import data.</div>
+      {% endif %}
+      <div class="small">
+        Templates: <a href="{{ url_for('data.template', kind='sales') }}"><i class="bi bi-download"></i> sales_template.csv</a> ·
+        <a href="{{ url_for('data.template', kind='products') }}"><i class="bi bi-download"></i> products_template.csv</a>
+      </div>
+      <details class="small mt-2">
+        <summary>Column reference</summary>
+        <p class="mt-2 mb-1"><strong>Sales (required):</strong> order_id, order_date, customer_id, customer_name, product_id, product_name, category, quantity, unit_price, unit_cost</p>
+        <p class="mb-1"><strong>Sales (optional):</strong> ship_date, status (Delivered / Shipped / Cancelled / Returned), ship_mode, payment_method, gender, age, city, state, region, segment, sub_category, discount (0.15 or 15)</p>
+        <p class="mb-1"><strong>Products (required):</strong> product_id, name, category, unit_cost, unit_price · <strong>optional:</strong> sub_category, stock_qty, reorder_level, supplier</p>
+        <p class="mb-0 text-secondary">Dates: YYYY-MM-DD preferred; DD-MM-YYYY is also accepted. Revenue is calculated as quantity x unit_price x (1 - discount); profit = revenue - quantity x unit_cost.</p>
+      </details>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card-x">
+      <h2>Reset database</h2>
+      <div class="card-sub">Deletes all orders, customers, products and stock history. User accounts are kept.</div>
+      {% if g.user.role == 'admin' %}
+      <form method="post" action="{{ url_for('data.reset') }}" onsubmit="return confirm('This permanently deletes all business data. Continue?')">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <div class="mb-2">
+          <div class="form-check"><input class="form-check-input" type="radio" name="mode" id="mSample" value="sample" checked><label class="form-check-label" for="mSample">Reset and reload sample data</label></div>
+          <div class="form-check"><input class="form-check-input" type="radio" name="mode" id="mEmpty" value="empty"><label class="form-check-label" for="mEmpty">Start empty (to import your own data)</label></div>
+        </div>
+        <div class="input-group input-group-sm">
+          <input class="form-control" name="confirm" placeholder="Type RESET to confirm" autocomplete="off" required>
+          <button class="btn btn-outline-danger">Reset</button>
+        </div>
+      </form>
+      {% else %}<div class="small text-secondary">Administrators only.</div>{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="card-x">
+  <h2>Import history</h2>
+  {% if history %}
+  <div class="table-wrap"><table class="table-x">
+    <thead><tr><th>When</th><th>File</th><th>Type</th><th class="num">Rows</th><th class="num">Imported</th><th class="num">Rejected</th><th>By</th></tr></thead>
+    <tbody>{% for h in history %}<tr><td>{{ h.imported_at }}</td><td>{{ h.filename }}</td><td>{{ h.import_type|title }}</td><td class="num">{{ h.rows_total|num }}</td>
+      <td class="num">{{ h.rows_imported|num }}</td><td class="num {{ 'neg' if h.rows_rejected }}">{{ h.rows_rejected|num }}</td><td>{{ h.user_name or 'System (sample)' }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="empty">No imports yet.</div>{% endif %}
+</div>
+{% endblock %}

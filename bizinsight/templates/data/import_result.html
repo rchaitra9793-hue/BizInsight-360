@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Import result{% endblock %}
+{% block heading %}Import result{% endblock %}
+{% block subheading %}{{ filename }} · {{ 'Sales transactions' if kind == 'sales' else 'Product catalogue' }}{% endblock %}
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-md-4"><div class="kpi"><div class="label"><i class="bi bi-file-earmark-text"></i>Rows in file</div><div class="value">{{ result.total|num }}</div></div></div>
+  <div class="col-md-4"><div class="kpi"><div class="label"><i class="bi bi-check2-circle"></i>Imported</div><div class="value">{{ result.imported|num }}</div>
+    <div class="delta">{% if kind == 'sales' %}duplicate order lines in the file are merged{% else %}new or updated products{% endif %}</div></div></div>
+  <div class="col-md-4"><div class="kpi"><div class="label"><i class="bi bi-x-circle"></i>Rejected</div><div class="value {{ 'neg' if result.rejected }}">{{ result.rejected|num }}</div></div></div>
+</div>
+{% if result.errors %}
+<div class="card-x mb-3">
+  <h2>Rejected rows</h2>
+  <div class="card-sub">First {{ result.errors|length }} problems. Fix them in the file and import it again - valid rows will simply be updated.</div>
+  <ul class="small mb-0">{% for e in result.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+<a class="btn btn-primary" href="{{ url_for('dashboard.index') }}">View dashboard</a>
+<a class="btn btn-outline-secondary" href="{{ url_for('data.index') }}">Import another file</a>
+{% endblock %}
